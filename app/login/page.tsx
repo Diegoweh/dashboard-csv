@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const supabase = createClient();
 
-  const handleEmail = async (e: React.FormEvent) => {
+  const handleEmail = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -30,16 +30,6 @@ export default function LoginPage() {
     }
 
     setLoading(false);
-  };
-
-  const handleGoogle = async () => {
-    setLoading(true);
-    setError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) { setError(error.message); setLoading(false); }
   };
 
   return (

@@ -99,7 +99,7 @@ export default function DashboardApp() {
         useCORS: true,
         backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F5F5F7',
         windowWidth: 1200,
-        onclone: (clonedDoc) => {
+        onclone: (clonedDoc: Document) => {
           // html2canvas doesn't support lab()/oklch() used by Tailwind v4 — strip those rules
           Array.from(clonedDoc.styleSheets).forEach(sheet => {
             try {
