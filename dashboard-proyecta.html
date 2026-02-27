@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyecta · Meta Ads Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,300;1,400&family=Roboto+Mono:wght@300;400;500;600&family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ============================================================
+   DESIGN TOKENS — Proyecta v7 · Apple-Keynote aesthetic
+   ============================================================ */
+:root {
+  --accent:       #E8342A;
+  --accent-hover: #C42920;
+  --accent-soft:  rgba(232,52,42,.07);
+  --accent-mid:   rgba(232,52,42,.14);
+  --accent-glow:  rgba(232,52,42,.20);
+  --green:        #1AB87A;
+  --green-soft:   rgba(26,184,122,.08);
+  --amber:        #F0A500;
+  --amber-soft:   rgba(240,165,0,.08);
+  --blue:         #3A7BD5;
+  --blue-soft:    rgba(58,123,213,.08);
+  --sans:         'Roboto', -apple-system, sans-serif;
+  --sans-light:   'Roboto', sans-serif;
+  --mono:         'Roboto Mono', monospace;
+  --cond:         'Roboto Condensed', sans-serif;
+  --r:    10px;
+  --rlg:  16px;
+  --rxl:  22px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.04);
+  --shadow:    0 2px 14px rgba(0,0,0,.07), 0 1px 3px rgba(0,0,0,.04);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.05);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,.14), 0 6px 20px rgba(0,0,0,.07);
+}
+
+/* ── LIGHT — Apple white ─────────────────────────────────── */
+[data-theme="light"] {
+  --bg-root:    #F5F5F7;
+  --bg-sidebar: rgba(255,255,255,.96);
+  --bg-card:    #FFFFFF;
+  --bg-card2:   #F5F5F7;
+  --bg-input:   #F2F2F4;
+  --bg-hover:   #EBEBED;
+  --border:     rgba(0,0,0,.06);
+  --border2:    rgba(0,0,0,.11);
+  --text:       #1D1D1F;
+  --text2:      #3D3D3F;
+  --text3:      #86868B;
+  --topbar-bg:  rgba(255,255,255,.84);
+  --grad-hero:  linear-gradient(160deg,#FAFAFA 0%,#F2F2F7 60%,#FAF0F0 100%);
+  --grad-accent:linear-gradient(135deg,#E8342A 0%,#FF4840 100%);
+}
+
+/* ── DARK — Apple Space Black ────────────────────────────── */
+[data-theme="dark"] {
+  --bg-root:    #000000;
+  --bg-sidebar: rgba(18,18,18,.97);
+  --bg-card:    #1C1C1E;
+  --bg-card2:   #2C2C2E;
+  --bg-input:   #2C2C2E;
+  --bg-hover:   #3A3A3C;
+  --border:     rgba(255,255,255,.07);
+  --border2:    rgba(255,255,255,.13);
+  --text:       #F5F5F7;
+  --text2:      #AEAEB2;
+  --text3:      #636366;
+  --topbar-bg:  rgba(0,0,0,.86);
+  --grad-hero:  linear-gradient(160deg,#1C1C1E 0%,#141414 60%,#1E1414 100%);
+  --grad-accent:linear-gradient(135deg,#E8342A 0%,#FF4840 100%);
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+body {
+  font-family: var(--sans); font-weight:400;
+  background: var(--bg-root); color: var(--text);
+  min-height:100vh; overflow-x:hidden;
+  transition: background .3s, color .3s;
+  letter-spacing:-.01em;
+}
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.app { display:flex; min-height:100vh; }
+
+/* ── SIDEBAR ──────────────────────────────────────────────── */
+.sidebar {
+  width:232px; flex-shrink:0;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:fixed; top:0; left:0; bottom:0; z-index:200;
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  transition:transform .3s cubic-bezier(.4,0,.2,1), background .3s;
+}
+.sidebar-logo { padding:24px 20px 20px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.logo-img { height:32px; width:auto; object-fit:contain; object-position:left center; }
+.logo-img-dark { display:none; } .logo-img-light { display:block; }
+[data-theme="dark"] .logo-img-dark { display:block; }
+[data-theme="dark"] .logo-img-light { display:none; }
+
+/* fallback wordmark */
+.logo-wordmark { display:flex; align-items:center; gap:10px; }
+.logo-mark {
+  width:30px; height:30px; border-radius:8px;
+  background:var(--grad-accent);
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--sans); font-weight:900; font-size:14px; color:#fff;
+  flex-shrink:0;
+}
+.logo-name { font-weight:700; font-size:13.5px; color:var(--text); letter-spacing:-.3px; }
+.logo-sub  { font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.5px; margin-top:1px; }
+
+.sidebar-scroll { overflow-y:auto; flex:1; padding:10px 8px; }
+
+.nav-group-label {
+  font-family:var(--mono); font-size:11px; font-weight:500;
+  letter-spacing:1.4px; text-transform:uppercase; color:var(--text3);
+  padding:14px 12px 5px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:9px;
+  padding:8px 12px; border-radius:var(--r);
+  font-size:13px; font-weight:400; color:var(--text2);
+  cursor:pointer; user-select:none;
+  transition:background .15s, color .15s;
+  margin-bottom:1px; position:relative;
+  letter-spacing:-.1px;
+}
+.nav-item:hover { background:var(--bg-hover); color:var(--text); }
+.nav-item.active { background:var(--accent-soft); color:var(--accent); font-weight:500; }
+.nav-item.active::before {
+  content:''; position:absolute; left:0; top:22%; bottom:22%;
+  width:2.5px; border-radius:0 2px 2px 0; background:var(--accent);
+}
+.nav-icon { font-size:13px; width:18px; text-align:center; flex-shrink:0; opacity:.65; }
+.nav-item.active .nav-icon { opacity:1; }
+.nav-badge {
+  margin-left:auto;
+  background:var(--accent); color:#fff;
+  font-size:11px; font-weight:700; font-family:var(--mono);
+  padding:1px 6px; border-radius:10px; min-width:18px; text-align:center;
+}
+.nav-divider { height:1px; background:var(--border); margin:6px 8px; }
+
+.sidebar-footer { padding:14px 16px; border-top:1px solid var(--border); flex-shrink:0; }
+.client-pill {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  background:var(--bg-card2); border:1px solid var(--border);
+  border-radius:var(--r); cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.client-pill:hover { background:var(--bg-hover); border-color:var(--border2); }
+.client-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--text3); flex-shrink:0; transition:background .3s;
+}
+.client-dot.live { background:var(--green); box-shadow:0 0 0 2px var(--green-soft); animation:pulse 2s infinite; }
+.client-info { flex:1; min-width:0; }
+.client-name { font-size:12px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.client-label { font-size:11px; font-family:var(--mono); color:var(--text3); margin-top:1px; letter-spacing:.5px; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.main { margin-left:232px; flex:1; min-width:0; display:flex; flex-direction:column; }
+
+/* ── TOPBAR ───────────────────────────────────────────────── */
+.topbar {
+  height:52px;
+  background:var(--topbar-bg);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; position:sticky; top:0; z-index:100;
+  transition:background .3s;
+}
+.topbar-left { display:flex; align-items:center; gap:10px; }
+.breadcrumb { font-size:13px; font-weight:300; display:flex; align-items:center; gap:8px; color:var(--text3); letter-spacing:-.1px; }
+.breadcrumb strong { color:var(--text2); font-weight:500; }
+.breadcrumb-sep { color:var(--border2); }
+.topbar-right { display:flex; align-items:center; gap:8px; }
+
+/* ── HAMBURGER ────────────────────────────────────────────── */
+.menu-toggle {
+  display:none; width:34px; height:34px;
+  background:var(--bg-card2); border:1px solid var(--border);
+  border-radius:var(--r); cursor:pointer;
+  align-items:center; justify-content:center; flex-shrink:0;
+  font-size:15px; color:var(--text2);
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.btn {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 18px; border-radius:20px; border:none;
+  font-size:13px; font-weight:500; font-family:var(--sans);
+  cursor:pointer; transition:all .2s; white-space:nowrap; letter-spacing:-.1px;
+}
+.btn-primary {
+  background:var(--grad-accent); color:#fff;
+  box-shadow:0 2px 8px var(--accent-glow);
+}
+.btn-primary:hover { transform:scale(1.02); box-shadow:0 4px 16px var(--accent-glow); }
+.btn-ghost {
+  background:var(--bg-card2); color:var(--text2); border:1px solid var(--border);
+}
+.btn-ghost:hover { background:var(--bg-hover); color:var(--text); border-color:var(--border2); }
+
+/* ── THEME TOGGLE ─────────────────────────────────────────── */
+.theme-toggle {
+  width:34px; height:34px;
+  background:var(--bg-card2); border:1px solid var(--border);
+  border-radius:50%; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; transition:all .2s;
+}
+.theme-toggle:hover { background:var(--bg-hover); transform:scale(1.08); }
+
+/* ── STATUS CHIP ──────────────────────────────────────────── */
+.status-chip {
+  display:flex; align-items:center; gap:6px;
+  padding:5px 12px; background:var(--bg-card2); border:1px solid var(--border);
+  border-radius:20px; font-size:12px; font-family:var(--mono); color:var(--text3); letter-spacing:.3px;
+}
+.s-dot { width:5px; height:5px; border-radius:50%; background:var(--text3); }
+.s-dot.live { background:var(--green); box-shadow:0 0 0 2px var(--green-soft); animation:pulse 2s infinite; }
+
+/* ============================================================
+   CONTENT WRAPPER
+   ============================================================ */
+.content { padding:28px 28px 0; flex:1; }
+
+/* ============================================================
+   UPLOAD VIEW
+   ============================================================ */
+#uploadView { display:none; max-width:700px; margin:0 auto; }
+#uploadView.active { display:block; }
+
+.upload-hero {
+  background:var(--grad-hero); border-radius:var(--rxl);
+  padding:52px 44px; text-align:center;
+  border:1.5px dashed var(--border2); cursor:pointer;
+  transition:all .25s; margin-bottom:14px;
+}
+.upload-hero:hover,.upload-hero.drag-over {
+  border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);
+}
+.upload-icon-wrap {
+  width:58px; height:58px; margin:0 auto 20px;
+  background:var(--accent-soft); border-radius:14px;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+}
+.upload-hero h2 { font-size:21px; font-weight:700; color:var(--text); margin-bottom:8px; letter-spacing:-.5px; }
+.upload-hero p { font-size:13px; font-weight:300; color:var(--text3); line-height:1.65; margin-bottom:24px; }
+.upload-hero input[type=file] { display:none; }
+.upload-tags { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+.upload-tag {
+  padding:4px 12px; border-radius:20px;
+  background:var(--bg-card); border:1px solid var(--border);
+  font-size:12px; font-family:var(--mono); color:var(--text3); letter-spacing:.3px;
+}
+
+.panel-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--rlg); overflow:hidden; margin-bottom:14px;
+}
+.panel-head {
+  padding:13px 18px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.panel-head h4 { font-size:13px; font-weight:500; color:var(--text); }
+.panel-head span { font-size:12px; font-family:var(--mono); color:var(--text3); }
+.preview-scroll { overflow-x:auto; max-height:200px; overflow-y:auto; }
+#csvPreviewTable { width:100%; border-collapse:collapse; font-size:12px; font-family:var(--mono); }
+#csvPreviewTable th {
+  background:var(--bg-card2); padding:8px 12px; text-align:left;
+  color:var(--text3); font-size:11px; letter-spacing:.8px; font-weight:500;
+  text-transform:uppercase; position:sticky; top:0; white-space:nowrap;
+}
+#csvPreviewTable td { padding:7px 12px; border-bottom:1px solid var(--border); color:var(--text2); white-space:nowrap; }
+.mapping-grid-wrap { padding:18px; display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; }
+.map-row { display:flex; flex-direction:column; gap:4px; }
+.map-label { font-size:12px; font-weight:500; color:var(--text2); font-family:var(--mono); }
+.map-select {
+  padding:8px 10px; background:var(--bg-input);
+  border:1px solid var(--border); border-radius:var(--r);
+  color:var(--text); font-family:var(--mono); font-size:12px;
+  cursor:pointer; outline:none; transition:border-color .15s;
+}
+.map-select:focus { border-color:var(--accent); }
+.panel-foot { padding:14px 18px; border-top:1px solid var(--border); display:flex; gap:8px; }
+
+/* ============================================================
+   DASHBOARD VIEW
+   ============================================================ */
+#dashboardView { display:none; }
+#dashboardView.active { display:block; }
+
+/* ── SECTIONS ─────────────────────────────────────────────── */
+.section { margin-bottom:32px; }
+.section-divider { height:1px; background:var(--border); margin:28px 0; }
+.section-head {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px; gap:10px; flex-wrap:wrap;
+}
+.section-title { display:flex; align-items:center; gap:10px; }
+.section-num {
+  font-family:var(--mono); font-size:12px; font-weight:500;
+  color:var(--accent); background:var(--accent-soft);
+  padding:2px 8px; border-radius:6px; letter-spacing:.5px;
+}
+.section-name {
+  font-size:17px; font-weight:700; color:var(--text); letter-spacing:-.45px;
+  font-family:var(--sans);
+}
+.section-tag {
+  font-size:12px; color:var(--text3); background:var(--bg-card2);
+  border:1px solid var(--border); padding:3px 11px; border-radius:20px;
+  font-family:var(--mono); letter-spacing:.2px;
+}
+.period-pill {
+  font-size:12px; font-family:var(--mono); color:var(--text3);
+  background:var(--bg-card2); border:1px solid var(--border);
+  padding:4px 12px; border-radius:20px; white-space:nowrap;
+}
+
+/* ── KPI CARDS ────────────────────────────────────────────── */
+.kpi-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+.kpi-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--rlg); padding:22px 22px 20px;
+  transition:box-shadow .2s, transform .2s, border-color .2s;
+  position:relative; overflow:hidden;
+}
+.kpi-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-1px); border-color:var(--border2); }
+/* hairline accent on hover */
+.kpi-card::after {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:transparent; transition:background .25s;
+  border-radius:var(--rlg) var(--rlg) 0 0;
+}
+.kpi-card:hover::after { background:var(--accent); }
+.kpi-card.kpi-main::after { background:var(--accent); }
+
+.kpi-label {
+  font-family:var(--mono); font-size:11px; font-weight:500;
+  color:var(--text3); letter-spacing:1px; margin-bottom:10px; text-transform:uppercase;
+}
+.kpi-value {
+  font-family:var(--cond); font-size:38px; font-weight:300;
+  letter-spacing:-2px; line-height:1; margin-bottom:8px; color:var(--text);
+}
+.kpi-card.kpi-main .kpi-value { color:var(--accent); }
+.kpi-sub { font-size:12px; font-family:var(--mono); color:var(--text3); letter-spacing:.3px; margin-bottom:6px; }
+.kpi-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 9px; border-radius:20px;
+  font-size:11px; font-family:var(--mono); font-weight:500;
+  margin-bottom:6px; letter-spacing:.3px;
+}
+.badge-green { background:var(--green-soft); color:var(--green); }
+.badge-red   { background:var(--accent-soft); color:var(--accent); }
+.badge-amber { background:var(--amber-soft); color:var(--amber); }
+.badge-muted { background:var(--bg-card2); color:var(--text3); border:1px solid var(--border); }
+.kpi-desc {
+  font-size:12px; font-weight:300; color:var(--text3); line-height:1.65;
+  margin-top:12px; padding-top:12px; border-top:1px solid var(--border);
+}
+.kpi-desc em { color:var(--text2); font-style:normal; font-weight:500; }
+
+/* ── METRIC ROW ───────────────────────────────────────────── */
+.metric-row { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+.metric-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--r); padding:16px 18px;
+  transition:box-shadow .2s, transform .2s;
+}
+.metric-card:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+.metric-label { font-size:11px; font-family:var(--mono); color:var(--text3); letter-spacing:.8px; text-transform:uppercase; margin-bottom:7px; }
+.metric-value { font-family:var(--cond); font-size:22px; font-weight:300; letter-spacing:-.4px; color:var(--text); }
+.metric-change { font-size:12px; font-family:var(--mono); color:var(--text3); margin-top:4px; letter-spacing:.2px; }
+
+/* ── CHARTS ───────────────────────────────────────────────── */
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.chart-card-wide { grid-column:1/-1; }
+.chart-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; }
+.chart-header { padding:16px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; justify-content:space-between; }
+.chart-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:-.2px; }
+.chart-sub { font-size:12px; font-weight:300; color:var(--text3); margin-top:2px; }
+.chart-body { padding:16px; }
+
+/* ── FUNNEL ───────────────────────────────────────────────── */
+.funnel-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; margin-bottom:14px; }
+.funnel-card-header { padding:16px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.funnel-body { padding:22px 26px; }
+.funnel-steps { display:flex; align-items:stretch; gap:2px; }
+.funnel-step { flex:1; display:flex; flex-direction:column; align-items:center; }
+.funnel-bar {
+  width:100%; background:var(--bg-card2); border:1px solid var(--border);
+  border-radius:var(--r); padding:14px 8px 12px; text-align:center;
+  transition:all .2s;
+}
+.funnel-bar:hover { transform:translateY(-2px); box-shadow:var(--shadow); border-color:var(--border2); }
+.funnel-step.f-main .funnel-bar { background:var(--accent-soft); border-color:var(--accent-mid); }
+.funnel-step.f-warn .funnel-bar { background:var(--amber-soft); border-color:rgba(240,165,0,.2); }
+.funnel-val { font-family:var(--cond); font-size:17px; font-weight:300; letter-spacing:-.3px; color:var(--text); }
+.funnel-step.f-main .funnel-val { color:var(--accent); }
+.funnel-step.f-warn .funnel-val { color:var(--amber); }
+.funnel-key { font-size:11px; font-family:var(--mono); color:var(--text3); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+.funnel-pct { font-size:12px; font-family:var(--mono); color:var(--text3); margin-top:8px; }
+.funnel-arrow { display:flex; align-items:center; color:var(--border2); font-size:16px; flex-shrink:0; padding:0 2px; align-self:center; }
+.delivery-note {
+  margin-top:16px; padding:13px 18px;
+  background:var(--blue-soft); border:1px solid rgba(58,123,213,.15);
+  border-radius:var(--r); font-size:12px; font-weight:300; color:var(--text2); line-height:1.65;
+}
+.delivery-note strong { color:var(--blue); font-weight:500; }
+
+/* ── CAMPAIGNS TABLE ──────────────────────────────────────── */
+.table-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; margin-bottom:14px; }
+.table-header { padding:16px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.table-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:-.2px; }
+.scroll-x { overflow-x:auto; }
+table.data-table { width:100%; border-collapse:collapse; }
+table.data-table th {
+  padding:10px 16px; text-align:left;
+  font-size:11px; font-family:var(--mono); color:var(--text3);
+  letter-spacing:.8px; font-weight:500; text-transform:uppercase;
+  background:var(--bg-card2); border-bottom:1px solid var(--border); white-space:nowrap;
+}
+table.data-table td { padding:11px 16px; font-size:12px; font-weight:400; border-bottom:1px solid var(--border); color:var(--text2); vertical-align:middle; transition:background .1s; }
+table.data-table tr:last-child td { border-bottom:none; }
+table.data-table tr:hover td { background:var(--bg-hover); }
+
+.action-chip { display:inline-flex; align-items:center; padding:3px 9px; border-radius:20px; font-size:11px; font-family:var(--mono); font-weight:500; letter-spacing:.3px; }
+.chip-scale   { background:var(--green-soft); color:var(--green); }
+.chip-pause   { background:var(--accent-soft); color:var(--accent); }
+.chip-optimize{ background:var(--amber-soft); color:var(--amber); }
+.chip-stable  { background:var(--bg-card2); color:var(--text3); border:1px solid var(--border); }
+
+/* ── WINNER BUTTON ────────────────────────────────────────── */
+.btn-pdf { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--r); font-size:12px; font-weight:500; cursor:pointer; border:none; transition:all .15s; font-family:var(--sans); letter-spacing:-.1px; }
+.btn-pdf-visual { background:var(--bg-card2); color:var(--text); border:1px solid var(--border2); }
+.btn-pdf-visual:hover { background:var(--bg-hover); }
+.btn-pdf-audit { background:var(--accent); color:#fff; }
+.btn-pdf-audit:hover { background:var(--accent-hover); box-shadow:0 4px 16px var(--accent-glow); }
+.pdf-loading { opacity:.6; pointer-events:none; }
+.btn-pdf svg { width:13px; height:13px; flex-shrink:0; }
+  display:inline-flex; align-items:center; gap:5px;
+  padding:4px 11px;
+  background:var(--accent-soft); border:1px solid var(--accent-mid);
+  border-radius:20px; font-size:12px; font-family:var(--mono); font-weight:500;
+  color:var(--accent); cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.btn-winner:hover { background:var(--accent-mid); }
+
+/* ── CREATIVE / WINNER CARD ───────────────────────────────── */
+.winner-highlight-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--rlg); padding:20px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; flex-wrap:wrap; margin-bottom:14px;
+  position:relative; overflow:hidden;
+}
+/* rainbow top edge — keynote style ✦ */
+.winner-highlight-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, var(--accent) 0%, var(--amber) 50%, var(--accent) 100%);
+}
+.winner-highlight-left { display:flex; align-items:center; gap:14px; }
+.winner-trophy { font-size:24px; }
+.winner-info-label { font-family:var(--mono); font-size:11px; font-weight:500; color:var(--accent); letter-spacing:1.5px; margin-bottom:4px; text-transform:uppercase; }
+.winner-info-name { font-size:17px; font-weight:700; color:var(--text); letter-spacing:-.4px; }
+.winner-info-stats { font-family:var(--mono); font-size:12px; color:var(--text3); margin-top:3px; letter-spacing:.2px; }
+.winner-metrics { display:flex; gap:24px; flex-wrap:wrap; }
+.winner-metric { text-align:center; }
+.winner-metric-val { font-family:var(--cond); font-size:18px; font-weight:300; color:var(--text); }
+.winner-metric-key { font-family:var(--mono); font-size:11px; color:var(--text3); margin-top:2px; letter-spacing:.5px; }
+
+.creative-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+.creative-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--r); padding:16px;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+}
+.creative-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); border-color:var(--border2); }
+.creative-name { font-family:var(--mono); font-size:11px; font-weight:500; color:var(--text3); margin-bottom:12px; text-transform:uppercase; letter-spacing:.5px; }
+.creative-metric { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.creative-metric:last-child { border-bottom:none; }
+.cm-key { color:var(--text3); font-family:var(--mono); font-size:12px; letter-spacing:.3px; }
+.cm-val { color:var(--text); font-weight:500; }
+
+/* ── VARIANTES ────────────────────────────────────────────── */
+.variants-section { margin-top:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; }
+.variants-header { padding:14px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; background:var(--bg-card2); }
+.variants-header-icon { font-size:13px; opacity:.7; }
+.variants-header-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:-.2px; }
+.variants-header-sub { font-size:12px; font-family:var(--mono); color:var(--text3); margin-left:auto; }
+.variants-grid { display:grid; grid-template-columns:repeat(3,1fr); }
+.variant-card { padding:20px 22px; border-right:1px solid var(--border); position:relative; transition:background .15s; }
+.variant-card:last-child { border-right:none; }
+.variant-card:hover { background:var(--bg-hover); }
+.variant-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; }
+.variant-card:nth-child(1)::before { background:var(--green); }
+.variant-card:nth-child(2)::before { background:var(--amber); }
+.variant-card:nth-child(3)::before { background:var(--blue); }
+.variant-num { font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+.variant-card:nth-child(1) .variant-num { color:var(--green); }
+.variant-card:nth-child(2) .variant-num { color:var(--amber); }
+.variant-card:nth-child(3) .variant-num { color:var(--blue); }
+.variant-format { font-size:12px; font-family:var(--mono); color:var(--text3); margin-bottom:10px; padding:3px 9px; background:var(--bg-card2); border:1px solid var(--border); border-radius:20px; display:inline-block; letter-spacing:.3px; }
+.variant-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:8px; letter-spacing:-.2px; }
+.variant-hook { font-size:12px; font-weight:300; font-style:italic; color:var(--text2); margin-bottom:10px; line-height:1.55; padding-left:10px; border-left:2px solid var(--border2); }
+.variant-desc { font-size:12px; font-weight:300; color:var(--text3); line-height:1.6; margin-bottom:10px; }
+.variant-tags { display:flex; gap:5px; flex-wrap:wrap; }
+.variant-tag { padding:2px 7px; border-radius:20px; font-size:11px; font-family:var(--mono); background:var(--bg-card2); color:var(--text3); border:1px solid var(--border); }
+.variants-loading { display:flex; align-items:center; gap:12px; padding:32px 20px; color:var(--text3); font-size:12.5px; font-weight:300; }
+.variants-spinner { width:14px; height:14px; border:1.5px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+.variants-placeholder { padding:32px 20px; text-align:center; color:var(--text3); }
+.variants-placeholder p { font-size:13px; font-weight:300; color:var(--text2); margin-bottom:6px; }
+.variants-placeholder small { font-size:12px; font-family:var(--mono); }
+@media(max-width:768px) { .variants-grid { grid-template-columns:1fr; } .variant-card { border-right:none; border-bottom:1px solid var(--border); } .variant-card:last-child { border-bottom:none; } }
+
+/* ── ALERTS ───────────────────────────────────────────────── */
+.alerts-stack { display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+.alert-card {
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--rlg); padding:16px 20px;
+  display:flex; gap:14px; align-items:flex-start;
+  transition:transform .15s, box-shadow .15s;
+}
+.alert-card:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+/* left-edge color stripe instead of full-card tint */
+.alert-card.alert-crit { border-left:2.5px solid var(--accent); }
+.alert-card.alert-warn { border-left:2.5px solid var(--amber); }
+.alert-card.alert-ok   { border-left:2.5px solid var(--green); }
+.alert-card.alert-info { border-left:2.5px solid var(--blue); }
+.alert-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+.alert-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:4px; letter-spacing:-.2px; }
+.alert-card.alert-crit .alert-title { color:var(--accent); }
+.alert-card.alert-warn .alert-title { color:var(--amber); }
+.alert-card.alert-ok   .alert-title { color:var(--green); }
+.alert-card.alert-info .alert-title { color:var(--blue); }
+.alert-desc { font-size:12px; font-weight:300; color:var(--text2); line-height:1.65; }
+.alert-action { font-size:12px; font-family:var(--mono); margin-top:7px; padding:3px 10px; border-radius:20px; display:inline-block; letter-spacing:.3px; font-weight:500; }
+.alert-card.alert-crit .alert-action { background:var(--accent-soft); color:var(--accent); }
+.alert-card.alert-warn .alert-action { background:var(--amber-soft); color:var(--amber); }
+.alert-card.alert-ok   .alert-action { background:var(--green-soft); color:var(--green); }
+.alert-card.alert-info .alert-action { background:var(--blue-soft); color:var(--blue); }
+
+/* ── DECISIONS ────────────────────────────────────────────── */
+.decision-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:14px; }
+.decision-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; }
+.decision-head { padding:13px 18px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
+.decision-head.dh-scale   { background:var(--green-soft); }
+.decision-head.dh-optimize{ background:var(--amber-soft); }
+.decision-head.dh-pause   { background:var(--accent-soft); }
+.decision-label { font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+.dh-scale .decision-label   { color:var(--green); }
+.dh-optimize .decision-label{ color:var(--amber); }
+.dh-pause .decision-label   { color:var(--accent); }
+.decision-items { padding:12px 16px; }
+.decision-item { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--border); font-size:12px; font-weight:300; color:var(--text2); line-height:1.5; }
+.decision-item:last-child { border-bottom:none; }
+.decision-item::before { content:'›'; color:var(--text3); flex-shrink:0; }
+
+/* ── BENCHMARKS ───────────────────────────────────────────── */
+.bench-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; margin-bottom:14px; }
+
+/* ── AI SECTION ───────────────────────────────────────────── */
+.ai-section { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--rlg); overflow:hidden; margin-bottom:14px; }
+.ai-header { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--bg-card2); display:flex; align-items:center; justify-content:space-between; }
+.ai-header-left { display:flex; align-items:center; gap:10px; }
+.ai-badge { padding:2px 9px; background:var(--blue-soft); border:1px solid rgba(58,123,213,.18); border-radius:20px; font-size:11px; font-family:var(--mono); font-weight:500; color:var(--blue); letter-spacing:.8px; text-transform:uppercase; }
+.ai-title { font-size:13px; font-weight:500; color:var(--text); letter-spacing:-.2px; }
+.ai-body { padding:20px; }
+.ai-placeholder { text-align:center; padding:36px; color:var(--text3); }
+.ai-placeholder p { font-size:13px; font-weight:300; margin-bottom:8px; color:var(--text2); }
+.ai-placeholder small { font-size:12px; font-family:var(--mono); }
+.ai-response { font-size:13px; font-weight:300; color:var(--text2); line-height:1.8; }
+.ai-loading { display:flex; align-items:center; gap:12px; padding:20px; color:var(--text3); font-size:13px; font-weight:300; }
+.ai-spinner { width:14px; height:14px; border:1.5px solid var(--border2); border-top-color:var(--blue); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── TEXT HELPERS ─────────────────────────────────────────── */
+.text-red   { color:var(--accent); }
+.text-green { color:var(--green); }
+.text-amber { color:var(--amber); }
+.text-muted { color:var(--text3); }
+.text-blue  { color:var(--blue); }
+
+/* ── ANIMATIONS ───────────────────────────────────────────── */
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.fade-in { animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both; }
+
+/* ============================================================
+   WINNER AD MODAL
+   ============================================================ */
+.modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.55); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  z-index:1000; display:flex; align-items:flex-start; justify-content:center;
+  padding:40px 16px; overflow-y:auto;
+  opacity:0; pointer-events:none; transition:opacity .25s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal-box {
+  width:100%; max-width:800px;
+  background:var(--bg-card); border:1px solid var(--border);
+  border-radius:var(--rxl); overflow:hidden;
+  transform:translateY(14px) scale(.98);
+  transition:transform .3s cubic-bezier(.4,0,.2,1);
+  box-shadow:var(--shadow-xl); flex-shrink:0;
+}
+.modal-overlay.open .modal-box { transform:translateY(0) scale(1); }
+.modal-top { display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid var(--border); background:var(--bg-card2); }
+.modal-top-left { display:flex; align-items:center; gap:12px; }
+.modal-badge-winner { padding:3px 10px; background:var(--amber-soft); border:1px solid rgba(240,165,0,.25); border-radius:20px; font-size:11px; font-family:var(--mono); font-weight:500; color:var(--amber); letter-spacing:.8px; text-transform:uppercase; }
+.modal-title { font-size:14px; font-weight:500; color:var(--text); letter-spacing:-.3px; }
+.modal-close { width:28px; height:28px; background:var(--bg-input); border:1px solid var(--border); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--text3); transition:all .15s; }
+.modal-close:hover { background:var(--accent-soft); color:var(--accent); }
+.modal-stats { display:flex; border-bottom:1px solid var(--border); overflow-x:auto; }
+.modal-stat { flex:1; min-width:90px; padding:16px 18px; border-right:1px solid var(--border); }
+.modal-stat:last-child { border-right:none; }
+.modal-stat-label { font-size:11px; font-family:var(--mono); color:var(--text3); letter-spacing:.8px; text-transform:uppercase; margin-bottom:6px; }
+.modal-stat-val { font-family:var(--cond); font-size:20px; font-weight:300; letter-spacing:-.4px; }
+.modal-stat-sub { font-size:12px; font-family:var(--mono); color:var(--text3); margin-top:2px; }
+.modal-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--bg-card2); padding:0 24px; }
+.modal-tab { padding:12px 0; margin-right:24px; font-size:13px; font-weight:400; color:var(--text3); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; white-space:nowrap; }
+.modal-tab.active { color:var(--text); border-bottom-color:var(--accent); font-weight:500; }
+.modal-tab:hover:not(.active) { color:var(--text2); }
+.modal-panel { display:none; padding:24px; }
+.modal-panel.active { display:block; }
+.analysis-loading { display:flex; flex-direction:column; align-items:center; gap:12px; padding:48px 24px; color:var(--text3); }
+.analysis-spinner { width:22px; height:22px; border:1.5px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+.analysis-block { margin-bottom:22px; }
+.analysis-block-title { font-family:var(--mono); font-size:11px; font-weight:500; letter-spacing:1px; color:var(--text3); text-transform:uppercase; margin-bottom:8px; padding-bottom:7px; border-bottom:1px solid var(--border); }
+.analysis-text { font-size:13px; font-weight:300; color:var(--text2); line-height:1.8; }
+.analysis-text strong { color:var(--text); font-weight:500; }
+.ideas-grid { display:flex; flex-direction:column; gap:12px; }
+.idea-card { background:var(--bg-card2); border:1px solid var(--border); border-radius:var(--rlg); padding:18px 20px; position:relative; overflow:hidden; transition:border-color .15s; }
+.idea-card:hover { border-color:var(--border2); }
+.idea-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; background:var(--accent); }
+.idea-num { font-family:var(--mono); font-size:11px; font-weight:500; color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px; }
+.idea-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:6px; letter-spacing:-.2px; }
+.idea-desc { font-size:12.5px; font-weight:300; color:var(--text2); line-height:1.7; margin-bottom:10px; }
+.idea-tags { display:flex; gap:6px; flex-wrap:wrap; }
+.idea-tag { padding:3px 9px; background:var(--bg-input); border:1px solid var(--border); border-radius:20px; font-size:11px; font-family:var(--mono); color:var(--text3); }
+
+/* ============================================================
+   SIDEBAR OVERLAY (mobile)
+   ============================================================ */
+.sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:190; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media(max-width:1024px) {
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+  .metric-row { grid-template-columns:repeat(3,1fr); }
+  .chart-grid { grid-template-columns:1fr; }
+  .decision-grid { grid-template-columns:1fr 1fr; }
+  .creative-grid { grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:768px) {
+  .sidebar { transform:translateX(-100%); width:240px; }
+  .sidebar.open { transform:translateX(0); }
+  .sidebar-overlay.visible { display:block; }
+  .main { margin-left:0; }
+  .menu-toggle { display:flex; }
+  .content { padding:16px 16px 0; }
+  .kpi-grid { grid-template-columns:1fr; gap:1px; }
+  .metric-row { grid-template-columns:1fr 1fr; gap:8px; }
+  .chart-grid { grid-template-columns:1fr; }
+  .decision-grid { grid-template-columns:1fr; }
+  .creative-grid { grid-template-columns:1fr 1fr; }
+  .winner-highlight-card { flex-direction:column; align-items:flex-start; }
+  .section-head { flex-direction:column; align-items:flex-start; }
+  .topbar { padding:0 16px; }
+  .topbar-right .status-chip { display:none; }
+  table.data-table th,table.data-table td { padding:8px 10px; font-size:12px; }
+  .modal-box { border-radius:var(--rlg); }
+  .modal-panel { padding:16px; }
+}
+@media(min-width:769px) and (max-width:960px) {
+  .sidebar { width:200px; } .main { margin-left:200px; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+  .metric-row { grid-template-columns:repeat(3,1fr); }
+  .creative-grid { grid-template-columns:repeat(2,1fr); }
+  .decision-grid { grid-template-columns:1fr 1fr; }
+  .content { padding:18px 18px 0; }
+}
+@media(max-width:393px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .metric-row { grid-template-columns:1fr 1fr; }
+  .creative-grid { grid-template-columns:1fr; }
+  .decision-grid { grid-template-columns:1fr; }
+  .funnel-steps { flex-direction:column; gap:4px; }
+  .funnel-arrow { transform:rotate(90deg); align-self:center; margin:0; }
+  .kpi-value { font-size:30px; }
+  .section-name { font-size:14px; }
+  .content { padding:12px 12px 0; }
+  .modal-tabs { overflow-x:auto; }
+}
+@media(min-width:1440px) {
+  .kpi-grid { grid-template-columns:2fr 1fr 1fr 1fr; }
+  .metric-row { grid-template-columns:repeat(5,1fr); }
+  .creative-grid { grid-template-columns:repeat(4,1fr); }
+}
+
+/* ── FOOTER ───────────────────────────────────────────────── */
+.proyecta-footer {
+  margin-left:232px; border-top:1px solid var(--border);
+  background:var(--bg-sidebar);
+  padding:24px 32px; margin-top:16px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:24px; flex-wrap:wrap; transition:background .3s;
+}
+.footer-brand { display:flex; align-items:center; gap:14px; }
+.footer-logo-mark { width:30px; height:30px; background:var(--grad-accent); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:900; color:#fff; flex-shrink:0; }
+.footer-brand-name { font-size:13px; font-weight:600; color:var(--text); letter-spacing:-.2px; }
+.footer-brand-tagline { font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.8px; margin-top:2px; text-transform:uppercase; }
+.footer-divider-v { width:1px; height:30px; background:var(--border); flex-shrink:0; }
+.footer-info { display:flex; gap:28px; flex-wrap:wrap; }
+.footer-info-item { display:flex; flex-direction:column; gap:2px; }
+.footer-info-label { font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.8px; text-transform:uppercase; }
+.footer-info-val { font-size:12px; font-weight:400; color:var(--text2); }
+.footer-info-val a { color:var(--text2); text-decoration:none; transition:color .15s; }
+.footer-info-val a:hover { color:var(--accent); }
+.footer-right { display:flex; flex-direction:column; align-items:flex-end; gap:3px; }
+.footer-version { font-family:var(--mono); font-size:11px; color:var(--text3); letter-spacing:.8px; text-transform:uppercase; }
+.footer-copy { font-size:12px; font-weight:300; color:var(--text3); }
+@media(max-width:768px) {
+  .proyecta-footer { margin-left:0; padding:20px 16px; flex-direction:column; align-items:flex-start; }
+  .footer-divider-v { display:none; }
+  .footer-right { align-items:flex-start; }
+}
+
+/* ── v7 FORMAT BADGES ───────────────────────────── */
+.fmt-video    { border-left:3px solid #00c2ff !important; color:#00c2ff !important; background:rgba(0,194,255,.08) !important; }
+.fmt-imagen   { border-left:3px solid #00e5a0 !important; color:#00e5a0 !important; background:rgba(0,229,160,.08) !important; }
+.fmt-carrusel { border-left:3px solid #ffd166 !important; color:#ffd166 !important; background:rgba(255,209,102,.08) !important; }
+.fmt-historia { border-left:3px solid #a78bfa !important; color:#a78bfa !important; background:rgba(167,139,250,.08) !important; }
+.fmt-reel     { border-left:3px solid #ff6b35 !important; color:#ff6b35 !important; background:rgba(255,107,53,.08) !important; }
+.fmt-default  { border-left:3px solid var(--border2) !important; }
+
+/* ── v7 HOVER LAYER ─────────────────────────────── */
+.action-chip:hover    { filter:brightness(1.15); transform:scale(1.03); }
+.action-chip          { transition:filter .15s, transform .15s; }
+.variant-tag          { transition:border-color .15s, color .15s; }
+.variant-tag:hover    { border-color:var(--border2); color:var(--text); }
+.idea-tag             { transition:border-color .15s, color .15s; }
+.idea-tag:hover       { border-color:var(--border2); color:var(--text); }
+.alert-action         { transition:filter .15s, transform .15s; cursor:pointer; }
+.alert-action:hover   { filter:brightness(1.12); transform:scale(1.02); }
+.ai-badge             { transition:filter .15s; }
+.ai-badge:hover       { filter:brightness(1.15); }
+.modal-badge-winner   { transition:filter .15s; }
+.modal-badge-winner:hover { filter:brightness(1.12); }
+.decision-card        { transition:box-shadow .2s, border-color .2s; }
+.decision-card:hover  { box-shadow:var(--shadow); border-color:var(--border2); }
+.decision-item        { transition:color .15s; }
+.decision-item:hover  { color:var(--text); }
+.variant-format       { transition:filter .15s; }
+.variant-format:hover { filter:brightness(1.1); }
+/* ───────────────────────────────────────────────── */
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <img class="logo-img logo-img-light" src="/public/logo_rojo.png"  alt="Proyecta">
+  </div>
+  <div class="sidebar-scroll">
+    <div class="nav-group-label">Workspace</div>
+    <div class="nav-item" id="navUpload" onclick="switchView('upload')">
+      <span class="nav-icon">↑</span> Cargar CSV
+    </div>
+    <div class="nav-item active" id="navDash" onclick="switchView('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-group-label">Análisis</div>
+    <div class="nav-item" id="nav_kpis"      onclick="scrollToSection('kpis')"><span class="nav-icon">◎</span> KPIs & Métricas</div>
+    <div class="nav-item" id="nav_funnel"    onclick="scrollToSection('funnel')"><span class="nav-icon">▾</span> Embudo</div>
+    <div class="nav-item" id="nav_campaigns" onclick="scrollToSection('campaigns')"><span class="nav-icon">≡</span> Campañas</div>
+    <div class="nav-item" id="nav_creative"  onclick="scrollToSection('creative')"><span class="nav-icon">⬡</span> Creative & Fatiga</div>
+    <div class="nav-item" id="nav_alerts"    onclick="scrollToSection('alerts')">
+      <span class="nav-icon">◉</span> Alertas
+      <span class="nav-badge" id="alertCount">3</span>
+    </div>
+    <div class="nav-item" id="nav_decisions" onclick="scrollToSection('decisions')"><span class="nav-icon">⊞</span> Decisiones</div>
+    <div class="nav-item" id="nav_aiinsights"onclick="scrollToSection('aiinsights')"><span class="nav-icon">✦</span> AI Insights</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="client-pill" onclick="switchView('upload')">
+      <div class="client-dot" id="clientDot"></div>
+      <div class="client-info">
+        <div class="client-name" id="clientName">Sin cliente</div>
+        <div class="client-label">CAMBIAR CSV</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+      <div class="breadcrumb">
+        <span>Proyecta</span>
+        <span class="breadcrumb-sep">/</span>
+        <strong>Meta Ads</strong>
+        <span class="breadcrumb-sep">/</span>
+        <span id="periodLabel">Demo</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-chip">
+        <div class="s-dot" id="statusDot"></div>
+        <span id="dateStr">–</span>
+      </div>
+      <div class="theme-toggle" onclick="toggleTheme()" id="themeBtn" title="Cambiar tema">🌙</div>
+      <button class="btn btn-ghost" onclick="switchView('upload')">↑ CSV</button>
+      <button class="btn-pdf btn-pdf-visual" id="btnPdfVisual" onclick="descargarDashboardPDF()">⬇ Dashboard PDF</button>
+      <button class="btn-pdf btn-pdf-audit"  id="btnPdfAudit"  onclick="generarAuditoriaPDF()">✦ Auditoría PDF</button>
+      <button class="btn btn-primary" onclick="runAIAnalysis()">✦ AI Analysis</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ===== UPLOAD VIEW ===== -->
+    <div id="uploadView">
+      <div class="upload-hero" id="dropZone" onclick="document.getElementById('csvFile').click()">
+        <div class="upload-icon-wrap">📊</div>
+        <h2>Arrastra tu CSV de Meta Ads aquí</h2>
+        <p>Exporta desde Meta Ads Manager a nivel de campaña o adset.<br>Se recomienda rango de 1 semana o 15 días para análisis óptimo.</p>
+        <button class="btn btn-primary" style="margin:0 auto">Seleccionar archivo</button>
+        <input type="file" id="csvFile" accept=".csv">
+        <div class="upload-tags">
+          <span class="upload-tag">Campaña o adset</span>
+          <span class="upload-tag">1 semana / 15 días</span>
+          <span class="upload-tag">Todas las columnas</span>
+        </div>
+      </div>
+      <div class="panel-card" id="csvPreviewBox" style="display:none">
+        <div class="panel-head"><h4>Vista previa del CSV</h4><span id="csvRowCount">0 filas</span></div>
+        <div class="preview-scroll"><table id="csvPreviewTable"></table></div>
+      </div>
+      <div class="panel-card" id="mappingSection" style="display:none">
+        <div class="panel-head"><h4>Mapeo de columnas</h4><span>Asigna las columnas del CSV</span></div>
+        <div class="mapping-grid-wrap" id="mappingGrid"></div>
+        <div class="panel-foot">
+          <button class="btn btn-primary" onclick="applyCSVData()">▶ Aplicar al dashboard</button>
+          <button class="btn btn-ghost" onclick="resetToDemo()">↩ Resetear demo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== DASHBOARD VIEW ===== -->
+    <div id="dashboardView" style="display:none">
+      <div id="dashboardContent">
+
+      <!-- 01 KPIs -->
+      <div class="section" id="kpis">
+        <div class="section-head">
+          <div class="section-title">
+            <span class="section-num">01</span>
+            <span class="section-name">KPIs de Intención</span>
+          </div>
+          <div class="period-pill" id="periodPill">◎ Demo · 15 días</div>
+        </div>
+        <div class="kpi-grid fade-in">
+          <div class="kpi-card kpi-main">
+            <div class="kpi-label">CPL-I · COSTO POR CLIC INTENCIÓN</div>
+            <div class="kpi-badge badge-green" id="kpi_cpli_badge">▼ Bajo benchmark</div>
+            <div class="kpi-value" id="kpi_cpli">$3.20</div>
+            <div class="kpi-sub" id="kpi_cpli_bench">E-comm &lt;$5 · Hotel &lt;$8</div>
+            <div class="kpi-desc"><em>KPI principal</em>: costo de llevar al usuario hasta el clic en compra/reserva. Solo cuenta LPV + clic en CTA, no Link Clicks totales.</div>
+          </div>
+          <div class="kpi-card" id="kpi_ctr_card">
+            <div class="kpi-label">CTR ENLACE</div>
+            <div class="kpi-badge badge-green" id="kpi_ctr_badge">✓ Sólido</div>
+            <div class="kpi-value" id="kpi_ctr">2.7%</div>
+            <div class="kpi-sub">Meta &gt;2%</div>
+            <div class="kpi-desc" id="kpi_ctr_desc">Usa siempre <em>CTR de enlace</em>, no CTR total. Bajo = problema de creative, no de audiencia.</div>
+          </div>
+          <div class="kpi-card" id="kpi_lpv_rate_card">
+            <div class="kpi-label">TASA LPV / CLICKS</div>
+            <div class="kpi-badge badge-amber" id="kpi_lpv_rate_badge">⚠ Monitorear</div>
+            <div class="kpi-value" id="kpi_lpv_rate">78%</div>
+            <div class="kpi-sub">Meta &gt;85%</div>
+            <div class="kpi-desc" id="kpi_lpv_rate_desc">Si &lt;70%: usuarios hacen clic pero no esperan la carga. <em>Problema del sitio</em>. Revisar PageSpeed mobile.</div>
+          </div>
+          <div class="kpi-card" id="kpi_lpv_card">
+            <div class="kpi-label">VOLUMEN LPV</div>
+            <div class="kpi-badge badge-muted" id="kpi_lpv_badge">↑ Activo</div>
+            <div class="kpi-value" id="kpi_lpv">1,840</div>
+            <div class="kpi-sub">Visitas reales atribuidas</div>
+            <div class="kpi-desc" id="kpi_lpv_desc">Triangula con GA4. <em>Discrepancia &gt;30%</em> → revisar UTMs.</div>
+          </div>
+        </div>
+        <div class="metric-row fade-in">
+          <div class="metric-card">
+            <div class="metric-label">CPC · LPV</div>
+            <div class="metric-value" id="kpi_cpc">$1.74</div>
+            <div class="metric-change" id="kpi_cpc_change">▼ bajando · &lt;$2.50</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">CPM · SUBASTA</div>
+            <div class="metric-value" id="kpi_cpm">$11.40</div>
+            <div class="metric-change" id="kpi_cpm_change">↑ +$1.20 semana ant.</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GASTO TOTAL</div>
+            <div class="metric-value" id="kpi_spend">$3,200</div>
+            <div class="metric-change text-muted" id="kpi_spend_change">período analizado</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">FRECUENCIA</div>
+            <div class="metric-value" id="kpi_freq">2.1×</div>
+            <div class="metric-change" id="kpi_freq_change">⚠ &gt;2.5× es alerta</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">CPM ALCANCE ÚNICO</div>
+            <div class="metric-value" id="kpi_cpm_reach">$18.60</div>
+            <div class="metric-change text-muted">Costo llegar 1 nuevo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 02 CHARTS -->
+      <div class="section" id="charts">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">02</span><span class="section-name">Rendimiento Visual</span></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">Distribución de Gasto</div><div class="chart-sub">% presupuesto por campaña</div></div></div>
+            <div class="chart-body"><canvas id="chartSpend" height="190"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div><div class="chart-title">CPL-I por Campaña</div><div class="chart-sub">Costo clic intención · benchmark rojo</div></div></div>
+            <div class="chart-body"><canvas id="chartCpli" height="190"></canvas></div>
+          </div>
+          <div class="chart-card chart-card-wide">
+            <div class="chart-header"><div><div class="chart-title">CTR vs Frecuencia</div><div class="chart-sub">Zona ideal: CTR alto + frecuencia baja · verde = escalar · rojo = pausar</div></div></div>
+            <div class="chart-body"><canvas id="chartScatter" height="140"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 03 FUNNEL -->
+      <div class="section" id="funnel">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">03</span><span class="section-name">Embudo de Entrega</span><span class="section-tag">Punto de entrega al cliente</span></div>
+        </div>
+        <div class="funnel-card">
+          <div class="funnel-card-header">
+            <span class="chart-title">Flujo: Impresión → Intención Alta</span>
+            <span class="period-pill">◎ Período analizado</span>
+          </div>
+          <div class="funnel-body">
+            <div class="funnel-steps">
+              <div class="funnel-step"><div class="funnel-bar"><div class="funnel-val" id="f_imp">280K</div><div class="funnel-key">Impresiones</div></div><div class="funnel-pct">base</div></div>
+              <div class="funnel-arrow">›</div>
+              <div class="funnel-step"><div class="funnel-bar"><div class="funnel-val" id="f_reach">142K</div><div class="funnel-key">Alcance único</div></div><div class="funnel-pct" id="f_reach_pct">Frec. 1.97×</div></div>
+              <div class="funnel-arrow">›</div>
+              <div class="funnel-step"><div class="funnel-bar"><div class="funnel-val" id="f_clicks">7,560</div><div class="funnel-key">Link Clicks</div></div><div class="funnel-pct" id="f_clicks_pct">CTR 2.7%</div></div>
+              <div class="funnel-arrow">›</div>
+              <div class="funnel-step f-warn"><div class="funnel-bar"><div class="funnel-val" id="f_lpv">5,897</div><div class="funnel-key">LPV</div></div><div class="funnel-pct" id="f_lpv_pct">78% de LC ⚠</div></div>
+              <div class="funnel-arrow">›</div>
+              <div class="funnel-step f-main"><div class="funnel-bar"><div class="funnel-val" id="f_intent">1,840</div><div class="funnel-key">Clic Intención</div></div><div class="funnel-pct" id="f_intent_pct">31.2% de LPV</div></div>
+
+            </div>
+            <div class="delivery-note">
+              <strong>⟶ Punto de entrega de Proyecta:</strong> Tu trabajo termina en <strong id="f_delivery_val">1,840 clics de alta intención</strong> entregados. Solicita acceso a GA4 o reporte semanal para triangular. Esa comparativa es tu argumento de renovación.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 04 CAMPAIGNS -->
+      <div class="section" id="campaigns">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">04</span><span class="section-name">Detalle por Campaña</span></div>
+          <span class="section-tag" id="campaignCount">6 campañas</span>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Campañas del período</span></div>
+          <div class="scroll-x">
+            <table class="data-table" id="campaignTable">
+              <thead><tr>
+                <th>Campaña</th><th>Gasto</th><th>CPC-LPV</th><th>CPL-I</th>
+                <th>CTR</th><th>LPV</th><th>Frecuencia</th><th>Clics Intención</th>
+                <th>Acción</th><th>AI</th>
+              </tr></thead>
+              <tbody id="campaignBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 05 CREATIVE -->
+      <div class="section" id="creative">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">05</span><span class="section-name">Creative & Señales de Fatiga</span></div>
+        </div>
+        <div class="winner-highlight-card" id="winnerHighlightCard">
+          <div class="winner-highlight-left">
+            <div class="winner-trophy">🏆</div>
+            <div>
+              <div class="winner-info-label">MEJOR PERFORMANCE DEL PERÍODO</div>
+              <div class="winner-info-name" id="wh_name">Reel_v2</div>
+              <div class="winner-info-stats" id="wh_stats">CTR 3.4% · CPL-I $1.80 · Frec 1.6×</div>
+            </div>
+          </div>
+          <div class="winner-metrics" id="wh_metrics"></div>
+          <button class="btn-winner" id="winnerAnalyzeBtn" onclick="openWinnerModal(0)">⚡ Analizar ad a fondo</button>
+        </div>
+
+        <!-- Variantes del Ad Ganador -->
+        <div class="variants-section" id="variantsSection">
+          <div class="variants-header">
+            <span class="variants-header-icon">⬡</span>
+            <span class="variants-header-title">3 Variantes para Recrear el Ad Ganador</span>
+            <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="generateVariants()">✦ Generar con IA</button>
+            <span class="variants-header-sub" id="variantsSubLabel">Basado en el mejor ad del período</span>
+          </div>
+          <div id="variantsBody">
+            <div class="variants-placeholder">
+              <p>Las variantes se generan con base en el ad ganador del período.</p>
+              <small>Haz clic en "Generar con IA" · Requiere Claude API key</small>
+            </div>
+          </div>
+        </div>
+        <div class="creative-grid">
+          <div class="creative-card"><div class="creative-name">Frecuencia del período</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val" id="cr_freq">2.1×</span></div><div class="creative-metric"><span class="cm-key">Alerta local</span><span class="cm-val text-amber">&gt;2.5×</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-amber">⚠ Monitorear</span></div></div>
+          <div class="creative-card"><div class="creative-name">Hook Rate (3 segundos)</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val text-green" id="cr_hook">41%</span></div><div class="creative-metric"><span class="cm-key">Meta</span><span class="cm-val">&gt;30%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-green">▲ Sobre meta</span></div></div>
+          <div class="creative-card"><div class="creative-name">ThruPlay Rate (&gt;15s)</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val text-green" id="cr_thruplay">28%</span></div><div class="creative-metric"><span class="cm-key">Media</span><span class="cm-val">~22%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-green">✓ Sobre media</span></div></div>
+          <div class="creative-card"><div class="creative-name">Negative Feedback Rate</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val text-green" id="cr_neg">0.06%</span></div><div class="creative-metric"><span class="cm-key">Alerta</span><span class="cm-val">&gt;0.2%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-green">✓ Bajo</span></div></div>
+          <div class="creative-card"><div class="creative-name">Engagement Rate</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val text-green" id="cr_eng">4.4%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-green">▲ Alto</span></div></div>
+          <div class="creative-card"><div class="creative-name">Creative Ganador (72h)</div><div class="creative-metric"><span class="cm-key">Ad</span><span class="cm-val" id="cr_winner">Reel_v2</span></div><div class="creative-metric"><span class="cm-key">CTR</span><span class="cm-val text-green" id="cr_winner_ctr">3.4%</span></div></div>
+          <div class="creative-card"><div class="creative-name">Saturación de Audiencia</div><div class="creative-metric"><span class="cm-key">Alcanzado</span><span class="cm-val text-amber" id="cr_sat">61%</span></div><div class="creative-metric"><span class="cm-key">Alerta</span><span class="cm-val">&gt;70%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-amber">⚠ Acercándose</span></div></div>
+          <div class="creative-card"><div class="creative-name">Overlap entre Adsets</div><div class="creative-metric"><span class="cm-key">Valor</span><span class="cm-val text-green" id="cr_overlap">14%</span></div><div class="creative-metric"><span class="cm-key">Alerta</span><span class="cm-val">&gt;30%</span></div><div class="creative-metric"><span class="cm-key">Estado</span><span class="kpi-badge badge-green">✓ Bajo</span></div></div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 06 ALERTS -->
+      <div class="section" id="alerts">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">06</span><span class="section-name">Alertas — Acciones Inmediatas</span></div>
+          <span class="section-tag" id="alertCountLabel">3 alertas activas</span>
+        </div>
+        <div class="alerts-stack" id="alertsStack"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 07 DECISIONS -->
+      <div class="section" id="decisions">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">07</span><span class="section-name">Árbol de Decisiones</span><span class="section-tag">Basado en CPL-I y KPIs</span></div>
+        </div>
+        <div class="decision-grid" id="decisionGrid"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 08 BENCHMARKS -->
+      <div class="section" id="benchmarks">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">08</span><span class="section-name">Benchmarks</span><span class="section-tag">Turismo & E-commerce LATAM</span></div>
+        </div>
+        <div class="bench-card">
+          <div class="scroll-x">
+            <table class="data-table">
+              <thead><tr><th>Métrica</th><th>E-comm / Entretenimiento</th><th>Hotel / Alojamiento</th><th>Señal de alarma</th></tr></thead>
+              <tbody>
+                <tr><td>CTR de enlace</td><td class="text-green">&gt;2.0%</td><td class="text-green">&gt;1.8%</td><td class="text-red">&lt;0.8%</td></tr>
+                <tr><td>CPL-I</td><td class="text-green">&lt;$5 USD</td><td class="text-green">&lt;$8 USD</td><td class="text-red">&gt;2× benchmark</td></tr>
+                <tr><td>CPC Landing Page View</td><td class="text-green">&lt;$2.50 USD</td><td class="text-green">&lt;$4 USD</td><td class="text-red">&gt;$6 USD</td></tr>
+                <tr><td>Frecuencia — alerta</td><td class="text-amber">&gt;2.5×</td><td class="text-amber">&gt;3.0×</td><td class="text-red">&gt;4.5×</td></tr>
+                <tr><td>Tasa LPV / Link Clicks</td><td class="text-green">&gt;85%</td><td class="text-green">&gt;85%</td><td class="text-red">&lt;70%</td></tr>
+                <tr><td>Hook Rate video 3s</td><td class="text-green">&gt;30%</td><td class="text-green">&gt;25%</td><td class="text-red">&lt;15%</td></tr>
+                <tr><td>Negative Feedback Rate</td><td class="text-green">&lt;0.1%</td><td class="text-green">&lt;0.1%</td><td class="text-red">&gt;0.3%</td></tr>
+                <tr><td>Saturación audiencia</td><td class="text-amber">&gt;70%</td><td class="text-amber">&gt;65%</td><td class="text-red">&gt;80%</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <!-- 09 AI INSIGHTS -->
+      <div class="section" id="aiinsights">
+        <div class="section-head">
+          <div class="section-title"><span class="section-num">09</span><span class="section-name">AI Insights</span></div>
+          <span class="ai-badge">CLAUDE API · PRÓXIMAMENTE</span>
+        </div>
+        <div class="ai-section">
+          <div class="ai-header">
+            <div class="ai-header-left">
+              <span style="font-size:16px">✦</span>
+              <span class="ai-title">Análisis inteligente por cuenta</span>
+            </div>
+            <button class="btn btn-ghost" onclick="runAIAnalysis()">Generar análisis</button>
+          </div>
+          <div class="ai-body" id="aiBody">
+            <div class="ai-placeholder">
+              <p>Los insights de IA se generan en base a los datos reales de tu CSV.</p>
+              <small>Haz clic en "Generar análisis" o carga un CSV · Requiere Claude API key</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:48px"></div>
+      </div><!-- /dashboardContent -->
+    </div><!-- /dashboardView -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ===== WINNER AD MODAL ===== -->
+<div class="modal-overlay" id="winnerModal" onclick="closeWinnerModal(event)">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-top-left">
+        <span class="modal-badge-winner">⚡ AD ANÁLISIS</span>
+        <span class="modal-title" id="modalCampaignName">–</span>
+      </div>
+      <div class="modal-close" onclick="closeWinnerModal(null,true)">✕</div>
+    </div>
+    <div class="modal-stats" id="modalStats"></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="switchModalTab('diagnostico',this)">Diagnóstico completo</div>
+      <div class="modal-tab" onclick="switchModalTab('audiencia',this)">Audiencia & contexto</div>
+      <div class="modal-tab" onclick="switchModalTab('ideas',this)">3 Ideas para replicar</div>
+    </div>
+    <div class="modal-panel active" id="panel_diagnostico"><div id="panel_diagnostico_content"><div class="analysis-loading"><div class="analysis-spinner"></div><p>Analizando con Claude AI...</p></div></div></div>
+    <div class="modal-panel" id="panel_audiencia"><div id="panel_audiencia_content"><div class="analysis-loading"><div class="analysis-spinner"></div><p>Procesando audiencia...</p></div></div></div>
+    <div class="modal-panel" id="panel_ideas"><div id="panel_ideas_content"><div class="analysis-loading"><div class="analysis-spinner"></div><p>Generando ideas creativas...</p></div></div></div>
+  </div>
+</div>
+
+<!-- ===== PROYECTA INTELLIGENCE FOOTER ===== -->
+<footer class="proyecta-footer">
+  <div class="footer-brand">
+    <div class="footer-logo-mark">P</div>
+    <div>
+      <div class="footer-brand-name">Proyecta Intelligence</div>
+      <div class="footer-brand-tagline">META ADS ANALYTICS PLATFORM · V7.0</div>
+    </div>
+  </div>
+  <div class="footer-divider-v"></div>
+  <div class="footer-info">
+    <div class="footer-info-item">
+      <span class="footer-info-label">Agencia</span>
+      <span class="footer-info-val">Proyecta Igniting Marketing</span>
+    </div>
+    <div class="footer-info-item">
+      <span class="footer-info-label">País</span>
+      <span class="footer-info-val">México</span>
+    </div>
+    <div class="footer-info-item">
+      <span class="footer-info-label">Contacto</span>
+      <span class="footer-info-val"><a href="/cdn-cgi/l/email-protection#96fef9faf7d6e6e4f9eff3f5e2f7b8f5f9fbb8fbee"><span class="__cf_email__" data-cfemail="294146454869595b46504c4a5d48074a4644074451">[email&#160;protected]</span></a></span>
+    </div>
+    <div class="footer-info-item">
+      <span class="footer-info-label">Web</span>
+      <span class="footer-info-val"><a href="https://proyecta.com.mx" target="_blank">proyecta.com.mx</a></span>
+    </div>
+  </div>
+  <div class="footer-right">
+    <span class="footer-version">PROYECTA INTELLIGENCE · V7.0 · 2025</span>
+    <span class="footer-copy">© Proyecta Igniting Marketing · Todos los derechos reservados</span>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+function fmtClass(f=''){
+  const v=(f||'').toLowerCase();
+  if(v.includes('video'))                                      return 'fmt-video';
+  if(v.includes('imagen')||v.includes('image')||v.includes('foto')) return 'fmt-imagen';
+  if(v.includes('carrusel')||v.includes('carousel'))           return 'fmt-carrusel';
+  if(v.includes('historia')||v.includes('story'))              return 'fmt-historia';
+  if(v.includes('reel'))                                       return 'fmt-reel';
+  return 'fmt-default';
+}
+// ========== THEME ==========
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙' : '☀️';
+  localStorage.setItem('proy_theme', isDark ? 'light' : 'dark');
+  // Update charts for theme change
+  if(currentData) renderCharts(currentData);
+}
+(function initTheme(){
+  const saved = localStorage.getItem('proy_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  const btn = document.getElementById('themeBtn');
+  if(btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+})();
+
+// ========== MOBILE SIDEBAR ==========
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('visible');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
+
+// ========== DATA ==========
+const DEMO_DATA = {
+  clientName: 'DEMO',
+  period: 'Demo · 15 dias',
+  metrics: {
+    cpli: 3.20, ctr: 2.7, lpv_rate: 78, lpv: 1840,
+    cpc: 1.74, cpm: 11.40, spend: 3200, freq: 2.1, cpm_reach: 18.60,
+    impressions: 280000, reach: 142000, link_clicks: 7560, lpv_total: 5897, intent_clicks: 1840
+  },
+  campaigns: [
+    {name:'Prosp_Familias_Video',       spend:820, cpc:1.60, cpli:3.10, ctr:3.1, lpv:512, freq:1.6, intent:265, action:'Escalar'},
+    {name:'Retarg_Visita_Producto',     spend:210, cpc:1.05, cpli:1.80, ctr:4.2, lpv:200, freq:2.9, intent:117, action:'Optimizar'},
+    {name:'Prosp_Broad_Carousel',       spend:640, cpc:2.80, cpli:5.40, ctr:2.4, lpv:229, freq:1.9, intent:118, action:'Estable'},
+    {name:'LAL_1pct_Compradores',       spend:590, cpc:3.10, cpli:6.20, ctr:2.1, lpv:190, freq:2.0, intent:95,  action:'Estable'},
+    {name:'Prosp_Broad_Static_Image',   spend:480, cpc:4.80, cpli:9.60, ctr:1.1, lpv:100, freq:4.1, intent:50,  action:'Pausar HOY'},
+    {name:'Retarg_Homepage',            spend:460, cpc:2.30, cpli:7.10, ctr:2.6, lpv:200, freq:3.8, intent:65,  action:'Optimizar'},
+  ]
+};
+
+let currentData = DEMO_DATA;
+let charts = {};
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('dateStr').textContent = d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  showView('dashboard');
+  renderAll(DEMO_DATA);
+  setupCSV();
+});
+
+// ========== VIEW SWITCHING ==========
+function switchView(v) {
+  showView(v);
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(v==='dashboard') document.getElementById('navDash').classList.add('active');
+  if(v==='upload')    document.getElementById('navUpload').classList.add('active');
+  closeSidebar();
+}
+function showView(v) {
+  document.getElementById('uploadView').style.display    = v==='upload'    ? 'block' : 'none';
+  document.getElementById('dashboardView').style.display = v==='dashboard' ? 'block' : 'none';
+}
+function scrollToSection(id) {
+  showView('dashboard');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navEl = document.getElementById('nav_'+id);
+  if(navEl) navEl.classList.add('active');
+  closeSidebar();
+  setTimeout(()=>{
+    const el = document.getElementById(id);
+    if(el) { const top = el.getBoundingClientRect().top + window.pageYOffset - 66; window.scrollTo({top, behavior:'smooth'}); }
+  }, 80);
+}
+
+// ========== RENDER ==========
+function renderAll(data) {
+  currentData = data;
+  renderMetrics(data);
+  renderFunnel(data);
+  renderCampaigns(data);
+  renderAlerts(data);
+  renderDecisions(data);
+  renderCharts(data);
+  updateClientPill(data);
+}
+function fmt$(v){ return v===undefined||v===null?'--':'$'+Number(v).toFixed(2); }
+function fmtPct(v){ return v===undefined||v===null?'--':Number(v).toFixed(1)+'%'; }
+function fmtK(v){ if(v===undefined||v===null)return'--'; return v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':Number(v).toLocaleString(); }
+function set(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+
+function renderMetrics(d) {
+  const m = d.metrics;
+
+  // ── Numeric values
+  set('kpi_cpli',     fmt$(m.cpli));
+  set('kpi_ctr',      fmtPct(m.ctr));
+  set('kpi_lpv_rate', fmtPct(m.lpv_rate));
+  set('kpi_lpv',      fmtK(m.lpv||m.intent_clicks));
+  set('kpi_cpc',      fmt$(m.cpc));
+  set('kpi_cpm',      fmt$(m.cpm));
+  set('kpi_spend',    '$'+Number(m.spend||0).toLocaleString());
+  set('kpi_freq',     (m.freq||0).toFixed(1)+'×');
+  set('kpi_cpm_reach',fmt$(m.cpm_reach));
+  set('periodPill',   '◎ '+d.period);
+  set('periodLabel',  d.period);
+
+  // ── CPL-I badge + card class
+  const cpli = m.cpli||0;
+  const cpliCard = document.getElementById('kpi_cpli')?.closest('.kpi-card');
+  const cpliBadge = document.getElementById('kpi_cpli_badge');
+  if (cpliCard && cpliBadge) {
+    if (cpli <= 0) {
+      cpliBadge.className = 'kpi-badge badge-muted'; cpliBadge.textContent = '— Sin datos';
+    } else if (cpli < 5) {
+      cpliCard.className = 'kpi-card kpi-main';
+      cpliBadge.className = 'kpi-badge badge-green'; cpliBadge.textContent = '▼ Bajo benchmark';
+    } else if (cpli < 8) {
+      cpliCard.className = 'kpi-card kpi-warn';
+      cpliBadge.className = 'kpi-badge badge-amber'; cpliBadge.textContent = '⚠ Monitorear';
+    } else {
+      cpliCard.className = 'kpi-card kpi-warn';
+      cpliBadge.className = 'kpi-badge badge-red'; cpliBadge.textContent = '▲ Sobre benchmark';
+    }
+  }
+
+  // ── CTR badge + desc
+  const ctr = m.ctr||0;
+  const ctrCard   = document.getElementById('kpi_ctr_card');
+  const ctrBadge  = document.getElementById('kpi_ctr_badge');
+  const ctrDesc   = document.getElementById('kpi_ctr_desc');
+  if (ctrCard && ctrBadge && ctrDesc) {
+    if (ctr >= 3) {
+      ctrCard.className = 'kpi-card kpi-main';
+      ctrBadge.className = 'kpi-badge badge-green'; ctrBadge.textContent = '▲ Excelente';
+      ctrDesc.innerHTML = 'CTR de <em>'+fmtPct(ctr)+'</em> supera el benchmark. El creative está capturando atención correctamente. Buen momento para escalar.';
+    } else if (ctr >= 2) {
+      ctrCard.className = 'kpi-card kpi-ok';
+      ctrBadge.className = 'kpi-badge badge-green'; ctrBadge.textContent = '✓ Sólido';
+      ctrDesc.innerHTML = 'CTR de <em>'+fmtPct(ctr)+'</em> dentro del rango objetivo. Usa siempre CTR de enlace, no CTR total. Mantener y probar variantes.';
+    } else if (ctr >= 1) {
+      ctrCard.className = 'kpi-card kpi-warn';
+      ctrBadge.className = 'kpi-badge badge-amber'; ctrBadge.textContent = '⚠ Bajo — Revisar creative';
+      ctrDesc.innerHTML = 'CTR de <em>'+fmtPct(ctr)+'</em> está por debajo del benchmark de 2%. El problema suele ser el hook visual o el copy de apertura. Probar nuevo creative en 48h.';
+    } else {
+      ctrCard.className = 'kpi-card kpi-warn';
+      ctrBadge.className = 'kpi-badge badge-red'; ctrBadge.textContent = '▼ Crítico';
+      ctrDesc.innerHTML = 'CTR de <em>'+fmtPct(ctr)+'</em> es crítico. El anuncio no está generando interés. Pausar y renovar creative urgentemente. Revisar también segmentación de audiencia.';
+    }
+  }
+
+  // ── Tasa LPV badge + desc
+  const lpvRate = m.lpv_rate||0;
+  const lpvCard  = document.getElementById('kpi_lpv_rate_card');
+  const lpvBadge = document.getElementById('kpi_lpv_rate_badge');
+  const lpvDesc  = document.getElementById('kpi_lpv_rate_desc');
+  if (lpvCard && lpvBadge && lpvDesc) {
+    if (lpvRate >= 85) {
+      lpvCard.className = 'kpi-card kpi-ok';
+      lpvBadge.className = 'kpi-badge badge-green'; lpvBadge.textContent = '✓ Óptima';
+      lpvDesc.innerHTML = 'Tasa de <em>'+fmtPct(lpvRate)+'</em> — excelente. Por cada 100 clics, '+Math.round(lpvRate)+' llegan efectivamente a la landing. La página carga bien en mobile.';
+    } else if (lpvRate >= 70) {
+      lpvCard.className = 'kpi-card kpi-warn';
+      lpvBadge.className = 'kpi-badge badge-amber'; lpvBadge.textContent = '⚠ Monitorear';
+      lpvDesc.innerHTML = 'Tasa de <em>'+fmtPct(lpvRate)+'</em> — por debajo del objetivo de 85%. El '+Math.round(100-lpvRate)+'% de los clics no completan la carga. Revisar velocidad mobile con PageSpeed Insights.';
+    } else {
+      lpvCard.className = 'kpi-card kpi-warn';
+      lpvBadge.className = 'kpi-badge badge-red'; lpvBadge.textContent = '▼ Crítica — Fricción alta';
+      lpvDesc.innerHTML = 'Tasa de <em>'+fmtPct(lpvRate)+'</em> es crítica. El '+Math.round(100-lpvRate)+'% de usuarios hace clic pero no espera la carga. <em>Problema del sitio</em>: auditar PageSpeed mobile urgente y considerar una landing dedicada más rápida.';
+    }
+  }
+
+  // ── Volumen LPV badge
+  const lpvVol = m.lpv||m.intent_clicks||0;
+  const lpvVolBadge = document.getElementById('kpi_lpv_badge');
+  const lpvVolDesc  = document.getElementById('kpi_lpv_desc');
+  if (lpvVolBadge) {
+    if (lpvVol > 0) {
+      lpvVolBadge.className = 'kpi-badge badge-green'; lpvVolBadge.textContent = '↑ Activo';
+    } else {
+      lpvVolBadge.className = 'kpi-badge badge-muted'; lpvVolBadge.textContent = '— Sin datos';
+    }
+  }
+  if (lpvVolDesc) {
+    lpvVolDesc.innerHTML = fmtK(lpvVol)+' visitas reales atribuidas al período. Triangula con GA4. <em>Discrepancia &gt;30%</em> → revisar UTMs y píxel.';
+  }
+
+  // ── CPC change
+  const cpc = m.cpc||0;
+  const cpcChange = document.getElementById('kpi_cpc_change');
+  if (cpcChange) {
+    if (cpc <= 2.5) {
+      cpcChange.className = 'metric-change text-green'; cpcChange.textContent = '▼ Eficiente · <$2.50';
+    } else if (cpc <= 4) {
+      cpcChange.className = 'metric-change text-amber'; cpcChange.textContent = '⚠ Revisar · >$2.50';
+    } else {
+      cpcChange.className = 'metric-change text-red'; cpcChange.textContent = '▲ Alto · Optimizar';
+    }
+  }
+
+  // ── CPM change
+  const cpm = m.cpm||0;
+  const cpmChange = document.getElementById('kpi_cpm_change');
+  if (cpmChange) {
+    if (cpm <= 15) {
+      cpmChange.className = 'metric-change text-green'; cpmChange.textContent = '✓ Subasta eficiente';
+    } else if (cpm <= 25) {
+      cpmChange.className = 'metric-change text-amber'; cpmChange.textContent = '⚠ CPM elevado';
+    } else {
+      cpmChange.className = 'metric-change text-red'; cpmChange.textContent = '▲ CPM alto · Revisar audiencia';
+    }
+  }
+
+  // ── Frecuencia change
+  const freq = m.freq||0;
+  const freqChange = document.getElementById('kpi_freq_change');
+  if (freqChange) {
+    if (freq <= 2.0) {
+      freqChange.className = 'metric-change text-green'; freqChange.textContent = '✓ Rango óptimo';
+    } else if (freq <= 3.0) {
+      freqChange.className = 'metric-change text-amber'; freqChange.textContent = '⚠ Monitorear · >2.5× alerta';
+    } else {
+      freqChange.className = 'metric-change text-red'; freqChange.textContent = '▲ Saturación · Rotar creative';
+    }
+  }
+
+  // ── Gasto change
+  const spendChange = document.getElementById('kpi_spend_change');
+  if (spendChange) {
+    spendChange.className = 'metric-change text-muted';
+    spendChange.textContent = d.period||'período analizado';
+  }
+}
+function renderFunnel(d) {
+  const m = d.metrics;
+  set('f_imp',   fmtK(m.impressions));
+  set('f_reach', fmtK(m.reach));
+  const freqCalc = m.impressions&&m.reach ? (m.impressions/m.reach).toFixed(2) : (m.freq||'--');
+  set('f_reach_pct','Frec. '+freqCalc+'x');
+  set('f_clicks', fmtK(m.link_clicks));
+  set('f_clicks_pct','CTR '+fmtPct(m.ctr));
+  set('f_lpv', fmtK(m.lpv_total||m.lpv));
+  const lpvPct = m.lpv_rate || (m.lpv_total&&m.link_clicks ? (m.lpv_total/m.link_clicks*100).toFixed(1) : '--');
+  set('f_lpv_pct', lpvPct+'% de LC'+(parseFloat(lpvPct)<85?' !':''));
+  set('f_intent', fmtK(m.intent_clicks||m.lpv));
+  const intentPct = m.lpv_total&&m.intent_clicks ? (m.intent_clicks/m.lpv_total*100).toFixed(1) : '--';
+  set('f_intent_pct', intentPct+'% de LPV');
+  set('f_delivery_val', fmtK(m.intent_clicks||m.lpv)+' clics de alta intencion');
+}
+function renderCampaigns(d) {
+  const tbody = document.getElementById('campaignBody');
+  if(!tbody) return;
+  const campaigns = d.campaigns||[];
+  set('campaignCount', campaigns.length+' campanas');
+  window._campaignIndex = campaigns;
+  const scored = campaigns.filter(c=>c.cpli&&c.ctr)
+    .map((c,i)=>({...c,_idx:i,score:(c.ctr/c.cpli)*(c.freq<2.5?1.2:.8)}))
+    .sort((a,b)=>b.score-a.score);
+  const winner = scored[0]||{...campaigns[0],_idx:0};
+  if(winner) updateWinnerHighlight(winner, campaigns);
+  tbody.innerHTML = campaigns.map((c,i)=>{
+    const ac={'Escalar':'chip-scale','Pausar HOY':'chip-pause','Optimizar':'chip-optimize','Estable':'chip-stable'}[c.action]||'chip-stable';
+    const isW = winner&&c.name===winner.name;
+    return `<tr${isW?' style="background:var(--accent-soft)"':''}>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${isW?'<span style="color:var(--accent);margin-right:5px">*</span>':''}${c.name}</td>
+      <td>$${Number(c.spend).toLocaleString()}</td>
+      <td>${fmt$(c.cpc)}</td><td>${fmt$(c.cpli)}</td>
+      <td>${fmtPct(c.ctr)}</td><td>${fmtK(c.lpv)}</td>
+      <td>${(c.freq||0).toFixed(1)}x</td><td>${fmtK(c.intent)}</td>
+      <td><span class="action-chip ${ac}">${c.action}</span></td>
+      <td><button class="btn-winner" style="font-size:11px;padding:3px 8px" onclick="openWinnerModal(${i})">Analizar</button></td>
+    </tr>`;
+  }).join('');
+}
+function updateWinnerHighlight(winner, all) {
+  set('wh_name',  winner.name);
+  set('wh_stats', 'CTR '+fmtPct(winner.ctr)+' CPL-I '+fmt$(winner.cpli)+' Frecuencia '+(winner.freq||0).toFixed(1)+'x');
+  const el = document.getElementById('wh_metrics');
+  if(el) el.innerHTML = [
+    {val:fmt$(winner.cpli),key:'CPL-I'},
+    {val:fmtPct(winner.ctr),key:'CTR'},
+    {val:(winner.freq||0).toFixed(1)+'x',key:'Frecuencia'},
+    {val:fmtK(winner.intent||winner.lpv),key:'Clics intencion'},
+  ].map(m=>`<div class="winner-metric"><div class="winner-metric-val">${m.val}</div><div class="winner-metric-key">${m.key}</div></div>`).join('');
+  window._winnerCampaign = winner;
+  window._allCampaigns   = all;
+  const idx = winner._idx!==undefined ? winner._idx : all.findIndex(c=>c.name===winner.name);
+  const btn = document.getElementById('winnerAnalyzeBtn');
+  if(btn) btn.setAttribute('onclick','openWinnerModal('+idx+')');
+}
+function renderAlerts(d) {
+  const m=d.metrics, campaigns=d.campaigns||[], alerts=[], bench=5;
+  campaigns.forEach(c=>{
+    if(c.cpli&&c.cpli>bench*2) alerts.push({
+      type:'crit',icon:'!',
+      title:c.name+' -- CPL-I '+fmt$(c.cpli)+' supera 2x benchmark',
+      desc:c.freq>3?'Frecuencia '+c.freq+'x confirma saturacion. Creative agotado. Pausar y crear nuevo ad antes de reactivar.':'CPL-I fuera de rango. Revisar segmentacion, creativos y relevancia del CTA.',
+      action:'Pausar - Crear nuevo creative'
+    });
+  });
+  if(m.lpv_rate&&m.lpv_rate<85) alerts.push({
+    type:m.lpv_rate<70?'crit':'warn',icon:'?',
+    title:'Tasa LPV/LC en '+fmtPct(m.lpv_rate)+' -- Friccion post-clic',
+    desc:'El '+(100-m.lpv_rate).toFixed(0)+'% de los clics no completan la carga. Revisar velocidad de carga mobile con PageSpeed Insights.',
+    action:'Auditar PageSpeed mobile - Considerar landing propia'
+  });
+  campaigns.forEach(c=>{
+    if(c.cpli&&c.cpli<bench*.7&&c.freq&&c.freq<2.0&&c.ctr>2.5) alerts.push({
+      type:'ok',icon:'OK',
+      title:c.name+' -- Senal de escala activa',
+      desc:'CPL-I '+fmt$(c.cpli)+' sostenido con CTR '+fmtPct(c.ctr)+' y frecuencia '+c.freq+'x controlada. Incrementar +20% y producir variacion.',
+      action:'Escalar budget +20% - Producir variacion creative'
+    });
+  });
+  alerts.push({
+    type:'info',icon:'i',
+    title:'Solicitar datos de conversion al cliente',
+    desc:'Entregaste '+fmtK(m.intent_clicks||m.lpv)+' clics de alta intencion. Pedir numero de ventas/reservas del periodo vs anterior.',
+    action:'Enviar solicitud semanal al cliente'
+  });
+  const stack=document.getElementById('alertsStack');
+  if(stack) stack.innerHTML=alerts.map(a=>`
+    <div class="alert-card alert-${a.type}">
+      <div class="alert-icon">${a.icon}</div>
+      <div><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div><span class="alert-action">${a.action}</span></div>
+    </div>`).join('');
+  const active=alerts.filter(a=>a.type==='crit'||a.type==='warn').length;
+  set('alertCount', active||'');
+  set('alertCountLabel', alerts.length+' alertas activas');
+}
+function renderDecisions(d) {
+  const campaigns=d.campaigns||[], bench=5;
+  const scale  = campaigns.filter(c=>c.cpli&&c.cpli<bench*.7&&c.freq<2.0);
+  const pause  = campaigns.filter(c=>(c.cpli&&c.cpli>bench*2)||(c.freq&&c.freq>4.5));
+  const optim  = campaigns.filter(c=>!scale.includes(c)&&!pause.includes(c));
+  const decs=[
+    {cls:'dh-scale',  icon:'Arrow up',label:'ESCALAR', items:['CPL-I bajo benchmark 3+ dias consecutivos','CTR >2% + frecuencia <2x + LPV/LC >85%','Budget utilization 88-95% sin spike CPM','Audiencia <60% saturada - Regla: +20% max cada 3-4 dias',scale.length?'Candidatas: '+scale.map(c=>c.name).join(', '):'Sin candidatas aun']},
+    {cls:'dh-optimize',icon:'Settings',label:'OPTIMIZAR',items:['CPL-I sube >20% vs semana anterior','Frecuencia 2.5-3.5x -> rotar creative','LPV/LC <75% -> alertar cliente sobre sitio','CTR baja + CPM estable -> problema creative',optim.length?'En proceso: '+optim.map(c=>c.name).join(', '):'']}.filter?{...({cls:'dh-optimize',icon:'Settings',label:'OPTIMIZAR',items:['CPL-I sube >20% vs semana anterior','Frecuencia 2.5-3.5x -> rotar creative','LPV/LC <75% -> alertar cliente sobre sitio','CTR baja + CPM estable -> problema creative',optim.length?'En proceso: '+optim.map(c=>c.name).join(', '):''].filter(Boolean)})}:{cls:'dh-optimize',icon:'Settings',label:'OPTIMIZAR',items:['CPL-I sube >20% vs semana anterior','Frecuencia 2.5-3.5x -> rotar creative','LPV/LC <75% -> alertar cliente sobre sitio','CTR baja + CPM estable -> problema creative',optim.length?'En proceso: '+optim.map(c=>c.name).join(', '):''].filter(Boolean)},
+    {cls:'dh-pause',  icon:'Stop',  label:'PAUSAR',   items:['CPL-I >2x benchmark por 3 dias','Frecuencia >4.5x en 7 dias','CTR <0.8% en +1000 impresiones','Negative feedback >0.3%',pause.length?'Pausar ahora: '+pause.map(c=>c.name).join(', '):'Sin campanas en zona de pausa']}
+  ];
+  const grid=document.getElementById('decisionGrid');
+  if(grid) grid.innerHTML=decs.map(dec=>`
+    <div class="decision-card">
+      <div class="decision-head ${dec.cls}"><span class="decision-label">${dec.label}</span></div>
+      <div class="decision-items">${dec.items.map(i=>`<div class="decision-item">${i}</div>`).join('')}</div>
+    </div>`).join('');
+}
+function renderCharts(d) {
+  const campaigns=d.campaigns||[];
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const colors=['#e73642','#10c98f','#f59e0b','#6366f1','#ec4899','#06b6d4'];
+  const labels=campaigns.map(c=>c.name.length>16?c.name.substring(0,15)+'...':c.name);
+  const gridColor=isDark?'rgba(255,255,255,.04)':'rgba(0,0,0,.05)';
+  const tickColor=isDark?'#55556a':'#8888a8';
+  const textColor=isDark?'#9999b8':'#4a4a62';
+  Object.values(charts).forEach(ch=>ch.destroy());
+  charts={};
+  const baseScales={
+    x:{grid:{color:gridColor},ticks:{color:tickColor,font:{family:'JetBrains Mono',size:10}}},
+    y:{grid:{color:gridColor},ticks:{color:tickColor,font:{family:'JetBrains Mono',size:10}}}
+  };
+  const ctx1=document.getElementById('chartSpend');
+  if(ctx1) charts.spend=new Chart(ctx1,{
+    type:'doughnut',
+    data:{labels,datasets:[{data:campaigns.map(c=>c.spend),backgroundColor:colors.map(c=>c+'bb'),borderColor:isDark?'#1a1b25':'#ffffff',borderWidth:3}]},
+    options:{plugins:{legend:{position:'right',labels:{color:textColor,font:{family:'JetBrains Mono',size:10},boxWidth:10,padding:10}}},cutout:'62%',maintainAspectRatio:false,responsive:true}
+  });
+  const ctx2=document.getElementById('chartCpli');
+  if(ctx2) charts.cpli=new Chart(ctx2,{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'CPL-I',data:campaigns.map(c=>c.cpli),backgroundColor:campaigns.map(c=>c.cpli>8?'rgba(231,54,66,.75)':c.cpli>5?'rgba(245,158,11,.75)':'rgba(16,201,143,.7)'),borderColor:campaigns.map(c=>c.cpli>8?'rgba(231,54,66,1)':c.cpli>5?'rgba(245,158,11,1)':'rgba(16,201,143,1)'),borderWidth:1,borderRadius:5},
+      {label:'Benchmark',data:campaigns.map(()=>5),type:'line',borderColor:'rgba(231,54,66,.5)',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{indexAxis:'y',maintainAspectRatio:false,responsive:true,plugins:{legend:{labels:{color:textColor,font:{family:'JetBrains Mono',size:10}}}},scales:{x:{...baseScales.x,beginAtZero:true},y:{...baseScales.y}}}
+  });
+  const ctx3=document.getElementById('chartScatter');
+  if(ctx3) charts.scatter=new Chart(ctx3,{
+    type:'scatter',
+    data:{datasets:[{label:'Campanas',data:campaigns.map(c=>({x:c.freq,y:c.ctr,label:c.name})),backgroundColor:campaigns.map(c=>(c.ctr>2&&c.freq<2.5)?'rgba(16,201,143,.8)':(c.ctr<1.5||c.freq>3.5)?'rgba(231,54,66,.8)':'rgba(245,158,11,.8)'),pointRadius:8,pointHoverRadius:11}]},
+    options:{maintainAspectRatio:false,responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>''+ctx.raw.label+' CTR: '+ctx.raw.y+'% Frec: '+ctx.raw.x+'x'}}},scales:{x:{...baseScales.x,title:{display:true,text:'Frecuencia',color:tickColor,font:{size:10,family:'JetBrains Mono'}}},y:{...baseScales.y,title:{display:true,text:'CTR %',color:tickColor,font:{size:10,family:'JetBrains Mono'}}}}}
+  });
+}
+function updateClientPill(d) {
+  set('clientName', d.clientName||'Sin cliente');
+  const dot=document.getElementById('clientDot');
+  if(dot) dot.className='client-dot'+(d.clientName&&d.clientName!=='DEMO'?' live':'');
+  const sdot=document.getElementById('statusDot');
+  if(sdot) sdot.className='s-dot'+(d.clientName&&d.clientName!=='DEMO'?' live':'');
+}
+
+// ========== CSV ==========
+const COL_FIELDS=[
+  {key:'campaign_name',label:'Nombre de Campana',required:true},
+  {key:'amount_spent',label:'Gasto (Amount Spent)',required:true},
+  {key:'cpc_all',label:'CPC (Link Clicks)'},
+  {key:'ctr_link',label:'CTR (Enlace)'},
+  {key:'landing_page_views',label:'Landing Page Views'},
+  {key:'impressions',label:'Impresiones'},
+  {key:'reach',label:'Alcance'},
+  {key:'link_clicks',label:'Link Clicks'},
+  {key:'frequency',label:'Frecuencia'},
+  {key:'cpm',label:'CPM'},
+];
+let csvHeaders=[],csvRows=[];
+function setupCSV() {
+  const dz=document.getElementById('dropZone');
+  const cf=document.getElementById('csvFile');
+  if(!dz||!cf) return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])processFile(e.dataTransfer.files[0]);});
+  cf.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
+}
+function processFile(file){
+  const r=new FileReader();
+  r.onload=e=>parseCSV(e.target.result,file.name.replace('.csv',''));
+  r.readAsText(file,'UTF-8');
+}
+function parseCSV(text,filename){
+  const lines=text.trim().split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/^"|"$/g,'')));
+  if(lines.length<2)return;
+  csvHeaders=lines[0]; csvRows=lines.slice(1).filter(r=>r.some(c=>c.trim()));
+  const pb=document.getElementById('csvPreviewBox');
+  const pt=document.getElementById('csvPreviewTable');
+  if(pb){pb.style.display='block';set('csvRowCount',csvRows.length+' filas');}
+  if(pt) pt.innerHTML=`<thead><tr>${csvHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${csvRows.slice(0,5).map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
+  buildMapping(filename);
+}
+function buildMapping(filename){
+  const sec=document.getElementById('mappingSection');
+  const grid=document.getElementById('mappingGrid');
+  if(!sec||!grid)return;
+  sec.style.display='block';
+  const auto=(field)=>{
+    const p={campaign_name:['campaign name','campana','nombre'],amount_spent:['amount spent','gasto','importe','spend'],cpc_all:['cpc','cost per click'],ctr_link:['ctr (link)','ctr link','link ctr'],landing_page_views:['landing page views','lpv'],impressions:['impressions','impresiones'],reach:['reach','alcance'],link_clicks:['link clicks','clics'],frequency:['frequency','frecuencia'],cpm:['cpm']};
+    return csvHeaders.findIndex(h=>(p[field]||[]).some(pat=>h.toLowerCase().includes(pat)));
+  };
+  grid.innerHTML=COL_FIELDS.map(f=>`
+    <div class="map-row">
+      <div class="map-label">${f.label}${f.required?' *':''}</div>
+      <select class="map-select" id="map_${f.key}">
+        ${['-- Ignorar --',...csvHeaders].map((o,i)=>`<option value="${i-1}"${i-1===auto(f.key)?' selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+function getColVal(row,key){
+  const s=document.getElementById('map_'+key);
+  if(!s)return null;
+  const i=parseInt(s.value);
+  return i<0?null:row[i]||null;
+}
+function applyCSVData(){
+  if(!csvRows.length)return;
+  const campaigns=csvRows.map(row=>{
+    const name=getColVal(row,'campaign_name')||'Sin nombre';
+    const spend=parseFloat((getColVal(row,'amount_spent')||'').replace(/[$,]/g,''))||0;
+    const cpc=parseFloat((getColVal(row,'cpc_all')||'').replace(/[$,]/g,''))||null;
+    const ctr=parseFloat((getColVal(row,'ctr_link')||'').replace('%',''))||null;
+    const lpv=parseInt((getColVal(row,'landing_page_views')||'').replace(/,/g,''))||null;
+    const imp=parseInt((getColVal(row,'impressions')||'').replace(/,/g,''))||null;
+    const reach=parseInt((getColVal(row,'reach')||'').replace(/,/g,''))||null;
+    const lc=parseInt((getColVal(row,'link_clicks')||'').replace(/,/g,''))||null;
+    const freq=parseFloat(getColVal(row,'frequency')||'')||null;
+    const cpm=parseFloat((getColVal(row,'cpm')||'').replace(/[$,]/g,''))||null;
+    const cpli=spend&&lpv?spend/lpv:null;
+    const action=!cpli?'Estable':cpli>10?'Pausar HOY':cpli>6?'Optimizar':cpli<3.5?'Escalar':'Estable';
+    return{name,spend,cpc,ctr,lpv,freq,cpm,impressions:imp,reach,link_clicks:lc,intent:lpv,cpli,action};
+  });
+  const totSpend=campaigns.reduce((a,c)=>a+(c.spend||0),0);
+  const totImp=campaigns.reduce((a,c)=>a+(c.impressions||0),0);
+  const totReach=campaigns.reduce((a,c)=>a+(c.reach||0),0);
+  const totLC=campaigns.reduce((a,c)=>a+(c.link_clicks||0),0);
+  const totLPV=campaigns.reduce((a,c)=>a+(c.lpv||0),0);
+  const totIntent=campaigns.reduce((a,c)=>a+(c.intent||0),0);
+  renderAll({
+    clientName:document.getElementById('csvFile')?.files?.[0]?.name?.replace('.csv','')||'Cliente',
+    period:'CSV importado',
+    metrics:{
+      cpli:totSpend&&totIntent?totSpend/totIntent:null,
+      ctr:totLC&&totImp?totLC/totImp*100:null,
+      lpv_rate:totLC&&totLPV?totLPV/totLC*100:null,
+      lpv:totIntent,cpc:totSpend&&totLC?totSpend/totLC:null,
+      cpm:totSpend&&totImp?totSpend/totImp*1000:null,
+      spend:totSpend,freq:totImp&&totReach?totImp/totReach:null,
+      impressions:totImp,reach:totReach,link_clicks:totLC,lpv_total:totLPV,intent_clicks:totIntent
+    },campaigns
+  });
+  switchView('dashboard');
+}
+function resetToDemo(){ renderAll(DEMO_DATA); switchView('dashboard'); }
+
+// ========== VARIANTES AD GANADOR ==========
+async function generateVariants() {
+  const body = document.getElementById('variantsBody');
+  if (!body) return;
+  const c = window._winnerCampaign;
+  if (!c) { body.innerHTML = '<div class="variants-placeholder"><p>Carga un CSV primero para identificar el ad ganador.</p></div>'; return; }
+  body.innerHTML = '<div class="variants-loading"><div class="variants-spinner"></div><span>Generando 3 variantes para recrear el ad ganador con Claude AI...</span></div>';
+  const gm = currentData.metrics || {};
+  const prompt = `Eres un estratega creativo experto en Meta Ads para turismo y comercio en México. Analiza este ad ganador y genera 3 variantes para recrearlo y mejorarlo.
+
+Ad Ganador: "${c.name}"
+CPL-I: $${(c.cpli||0).toFixed(2)} | CTR: ${(c.ctr||0).toFixed(1)}% | Frecuencia: ${(c.freq||0).toFixed(1)}x | LPV: ${c.lpv||0}
+Contexto cuenta: Gasto total $${gm.spend||0} · CPL-I promedio $${(gm.cpli||0).toFixed(2)} · ${(currentData.campaigns||[]).length} campañas activas
+
+Responde SOLO en JSON sin texto extra ni markdown:
+{"variantes":[
+  {"num":"VARIANTE 01","formato":"[formato: Video Reel/Imagen Estática/Carrusel/Story]","titulo":"[título de la variante]","hook":"[gancho de apertura, primeras palabras del copy o visual]","descripcion":"[descripción táctica de qué cambiar respecto al original]","tags":["[tag1]","[tag2]","[tag3]"]},
+  {"num":"VARIANTE 02","formato":"...","titulo":"...","hook":"...","descripcion":"...","tags":["..."]},
+  {"num":"VARIANTE 03","formato":"...","titulo":"...","hook":"...","descripcion":"...","tags":["..."]}
+]}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers: CLAUDE_HEADERS,
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens:1200, messages:[{role:'user',content:prompt}] })
+    });
+    if (!resp.ok) throw new Error('API ' + resp.status);
+    const data = await resp.json();
+    let text = (data.content?.map(b=>b.text||'').join('')||'{}').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch(e) { parsed = null; }
+
+    const colors = ['var(--green)','var(--amber)','var(--blue)'];
+    const colorsLabel = ['#10c98f','#f59e0b','#6366f1'];
+
+    if (parsed?.variantes) {
+      body.innerHTML = `<div class="variants-grid">${parsed.variantes.map((v,i) => `
+        <div class="variant-card">
+          <div class="variant-num">${v.num||'VARIANTE '+(i+1)}</div>
+          <span class="variant-format ${fmtClass(v.formato)}">${v.formato||'Ad'}</span>
+          <div class="variant-title">${v.titulo||'--'}</div>
+          <div class="variant-hook">"${v.hook||'--'}"</div>
+          <div class="variant-desc">${v.descripcion||'--'}</div>
+          <div class="variant-tags">${(v.tags||[]).map(t=>`<span class="variant-tag">${t}</span>`).join('')}</div>
+        </div>`).join('')}</div>`;
+    } else {
+      body.innerHTML = `<div class="variants-placeholder"><p style="color:var(--accent)">No se pudo parsear la respuesta</p><small>${text.substring(0,200)}</small></div>`;
+    }
+  } catch(err) {
+    body.innerHTML = `<div class="variants-placeholder"><p style="color:var(--accent)">Claude API no configurada</p><small>Conecta tu API key en el backend.<br>Error: ${err.message}</small></div>`;
+  }
+}
+
+// ========== AI ANALYSIS ==========
+async function runAIAnalysis() {
+  const body=document.getElementById('aiBody');
+  if(!body)return;
+  body.innerHTML=`<div class="ai-loading"><div class="ai-spinner"></div><span>Generando analisis con Claude AI...</span></div>`;
+  const m=currentData.metrics, campaigns=currentData.campaigns||[];
+  const summary=`Datos Meta Ads (${currentData.period}):\nGasto: $${(m.spend||0).toFixed(0)}\nCPL-I: $${(m.cpli||0).toFixed(2)} (bench <$5)\nCTR: ${(m.ctr||0).toFixed(1)}%\nFrecuencia: ${(m.freq||0).toFixed(1)}x\nCampanas:\n${campaigns.map(c=>`- ${c.name}: $${c.spend} CPL-I $${(c.cpli||0).toFixed(2)} CTR ${(c.ctr||0).toFixed(1)}% Frec ${(c.freq||0).toFixed(1)}x ${c.action}`).join('\n')}`;
+  const prompt=`Eres estratega experto en Meta Ads. Analiza y da:\n1. Diagnostico general (2-3 lineas)\n2. Top 3 prioridades inmediatas (especificas a campanas y metricas reales)\n3. Una oportunidad no obvia\nDirecto, especifico, basado en numeros. Espanol.\n\n${summary}`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:CLAUDE_HEADERS,body:JSON.stringify({model:CLAUDE_MODEL,max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    const text=data.content?.map(b=>b.text||'').join('')||'Sin respuesta';
+    body.innerHTML=`<div class="ai-response">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+  }catch(err){
+    body.innerHTML=`<div class="ai-placeholder"><p style="color:var(--accent)">Claude API no configurada</p><small>Conecta tu API key en el backend.<br>Error: ${err.message}</small></div>`;
+  }
+}
+
+// ========== WINNER MODAL ==========
+let _modalAnalyzed={diagnostico:false,audiencia:false,ideas:false};
+let _modalCampaign=null;
+function openWinnerModal(idx){
+  const c=typeof idx==='number'?(window._campaignIndex||[])[idx]:window._winnerCampaign;
+  if(!c)return;
+  _modalCampaign=c;
+  _modalAnalyzed={diagnostico:false,audiencia:false,ideas:false};
+  set('modalCampaignName',c.name);
+  const stats=[
+    {label:'GASTO',val:'$'+Number(c.spend||0).toLocaleString(),sub:'periodo'},
+    {label:'CPL-I',val:fmt$(c.cpli),sub:'clic intencion'},
+    {label:'CTR',val:fmtPct(c.ctr),sub:'meta >2%'},
+    {label:'CPC LPV',val:fmt$(c.cpc),sub:'costo visita'},
+    {label:'FRECUENCIA',val:(c.freq||0).toFixed(1)+'x',sub:c.freq>2.5?'alta':'ok'},
+    {label:'LPV',val:fmtK(c.lpv),sub:'visitas reales'},
+  ];
+  const se=document.getElementById('modalStats');
+  if(se) se.innerHTML=stats.map(s=>`<div class="modal-stat"><div class="modal-stat-label">${s.label}</div><div class="modal-stat-val">${s.val}</div><div class="modal-stat-sub">${s.sub}</div></div>`).join('');
+  switchModalTab('diagnostico',document.querySelector('.modal-tab'));
+  document.getElementById('winnerModal').classList.add('open');
+  document.body.style.overflow='hidden';
+  runModalAnalysis('diagnostico');
+}
+function closeWinnerModal(e,force){
+  if(!force&&e&&e.target!==document.getElementById('winnerModal'))return;
+  document.getElementById('winnerModal').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeWinnerModal(null,true);});
+function switchModalTab(tab,el){
+  document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.modal-panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById('panel_'+tab);
+  if(panel)panel.classList.add('active');
+  if(!_modalAnalyzed[tab])runModalAnalysis(tab);
+}
+async function runModalAnalysis(tab){
+  if(_modalAnalyzed[tab])return;
+  const c=_modalCampaign;
+  if(!c)return;
+  const el=document.getElementById('panel_'+tab+'_content');
+  if(!el)return;
+  _modalAnalyzed[tab]=true;
+  const all=window._allCampaigns||[];
+  const gm=currentData.metrics||{};
+  const ctx=`Campana: "${c.name}"\nGasto: $${c.spend||0}\nCPL-I: $${(c.cpli||0).toFixed(2)} (bench <$5)\nCTR: ${(c.ctr||0).toFixed(1)}%\nCPC: $${(c.cpc||0).toFixed(2)}\nLPV: ${c.lpv||0}\nFrecuencia: ${(c.freq||0).toFixed(1)}x\nAccion: ${c.action}\nCuenta total: gasto $${gm.spend||0} CPL-I avg $${(gm.cpli||0).toFixed(2)} CTR ${(gm.ctr||0).toFixed(1)}%\nOtras campanas: ${all.filter(x=>x.name!==c.name).map(x=>x.name).join(', ')||'--'}`;
+  const prompts={
+    diagnostico:`Analiza esta campana de Meta Ads. Responde SOLO en JSON sin texto extra:\n{"performance":"...","hook":"...","cta":"...","audiencia":"...","urgencia":"..."}\nData:\n${ctx}`,
+    audiencia:`Analiza el perfil de audiencia. Responde SOLO en JSON:\n{"perfil":"...","tamanio":"...","calidad":"...","expansion":"...","fatiga":"..."}\nData:\n${ctx}`,
+    ideas:`Genera 3 ideas de ads para replicar el exito. Responde SOLO en JSON:\n{"ideas":[{"titulo":"...","formato":"...","hook":"...","descripcion":"...","porque":"...","tags":["..."]},...]}\nData:\n${ctx}`
+  };
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:CLAUDE_HEADERS,body:JSON.stringify({model:CLAUDE_MODEL,max_tokens:1200,messages:[{role:'user',content:prompts[tab]}]})});
+    if(!resp.ok)throw new Error('API '+resp.status);
+    const data=await resp.json();
+    let text=(data.content?.map(b=>b.text||'').join('')||'{}').replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+    let parsed;
+    try{parsed=JSON.parse(text);}catch(e){parsed=null;}
+    if(tab==='diagnostico'&&parsed){
+      el.innerHTML=Object.entries({performance:'Rendimiento',hook:'Hook & Formato creativo',cta:'CTA & Landing',audiencia:'Senales de audiencia',urgencia:'Vida util estimada'}).map(([k,label])=>parsed[k]?`<div class="analysis-block"><div class="analysis-block-title">${label}</div><div class="analysis-text">${parsed[k]}</div></div>`:'').join('');
+    } else if(tab==='audiencia'&&parsed){
+      el.innerHTML=Object.entries({perfil:'Perfil de audiencia',tamanio:'Tamano estimado',calidad:'Calidad de senal',expansion:'Potencial de escala',fatiga:'Fatiga proyectada'}).map(([k,label])=>parsed[k]?`<div class="analysis-block"><div class="analysis-block-title">${label}</div><div class="analysis-text">${parsed[k]}</div></div>`:'').join('');
+    } else if(tab==='ideas'&&parsed?.ideas){
+      el.innerHTML=`<div class="ideas-grid">${parsed.ideas.map((idea,i)=>`<div class="idea-card"><div class="idea-num"><span class="variant-format ${fmtClass(idea.formato)}" style="margin-right:8px">${idea.formato||'Ad'}</span>IDEA ${i+1}</div><div class="idea-title">${idea.titulo||'--'}</div><div style="margin-bottom:8px"><span style="font-size:12px;font-family:var(--mono);color:var(--text3)">HOOK: </span><span style="font-size:12.5px;font-style:italic;color:var(--text2)">"${idea.hook||'--'}"</span></div><div class="idea-desc">${idea.descripcion||'--'}</div><div style="font-size:12px;color:var(--text3);margin-bottom:8px"><strong style="color:var(--text2)">Por que funcionara:</strong> ${idea.porque||'--'}</div><div class="idea-tags">${(idea.tags||[]).map(t=>`<span class="idea-tag">${t}</span>`).join('')}</div></div>`).join('')}</div>`;
+    } else {
+      el.innerHTML=`<div class="analysis-text">${text.replace(/\n/g,'<br>')}</div>`;
+    }
+  }catch(err){
+    el.innerHTML=`<div class="analysis-block"><div class="analysis-block-title">Claude API no configurada</div><div class="analysis-text">Error al conectar con Claude API. Verifica tu conexión e intenta de nuevo.</div></div>`;
+  }
+}
+
+// ========== CLAUDE API CONFIG ==========
+const CLAUDE_API_KEY = 'TU_API_KEY_AQUI'; // ← reemplazar con sk-ant-...
+const CLAUDE_MODEL   = 'claude-sonnet-4-5-20251001';
+const CLAUDE_HEADERS = {
+  'Content-Type': 'application/json',
+  'x-api-key': CLAUDE_API_KEY,
+  'anthropic-version': '2023-06-01',
+  'anthropic-dangerous-direct-browser-access': 'true'
+};
+
+// ========== PDF DASHBOARD VISUAL ==========
+async function descargarDashboardPDF() {
+  const btn = document.getElementById('btnPdfVisual');
+  btn.classList.add('pdf-loading');
+  btn.textContent = 'Generando…';
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const content   = document.getElementById('dashboardContent');
+    const canvas    = await html2canvas(content, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: getComputedStyle(document.documentElement)
+                          .getPropertyValue('--bg').trim() || '#ffffff',
+      windowWidth: 1200
+    });
+
+    const imgData  = canvas.toDataURL('image/png');
+    const pdf      = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW    = pdf.internal.pageSize.getWidth();
+    const pageH    = pdf.internal.pageSize.getHeight();
+    const margin   = 10;
+    const usableW  = pageW - margin * 2;
+    const imgH     = (canvas.height * usableW) / canvas.width;
+    const accent   = [232, 52, 42];
+
+    // Header
+    pdf.setFillColor(...accent);
+    pdf.rect(0, 0, pageW, 12, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('PROYECTA · META ADS INTELLIGENCE', margin, 8);
+    const clientText = document.getElementById('periodLabel')?.textContent || 'Dashboard';
+    pdf.text(clientText, pageW - margin, 8, { align: 'right' });
+
+    // Dashboard image — paginate if tall
+    let yOffset = 14;
+    let remaining = imgH;
+    let srcY = 0;
+    const availH = pageH - yOffset - 14;
+
+    while (remaining > 0) {
+      const sliceH = Math.min(remaining, availH);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width  = canvas.width;
+      sliceCanvas.height = (sliceH / imgH) * canvas.height;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, srcY, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+      const sliceData = sliceCanvas.toDataURL('image/png');
+      pdf.addImage(sliceData, 'PNG', margin, yOffset, usableW, sliceH);
+      remaining -= sliceH;
+      srcY      += sliceCanvas.height;
+      if (remaining > 0) { pdf.addPage(); yOffset = 10; }
+    }
+
+    // Footer on last page
+    pdf.setFillColor(...accent);
+    pdf.rect(0, pageH - 8, pageW, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(7);
+    pdf.text(`Generado por Proyecta · ${new Date().toLocaleDateString('es-MX')}`, margin, pageH - 3);
+
+    const fecha    = new Date().toISOString().slice(0,10);
+    const cliente  = (document.getElementById('periodLabel')?.textContent || 'dashboard').replace(/\s/g,'-');
+    pdf.save(`dashboard-${cliente}-${fecha}.pdf`);
+  } catch(e) {
+    alert('Error al generar el PDF. Intenta de nuevo.');
+    console.error(e);
+  } finally {
+    btn.classList.remove('pdf-loading');
+    btn.innerHTML = '⬇ Dashboard PDF';
+  }
+}
+
+// ========== PDF AUDITORÍA EJECUTIVA IA ==========
+async function generarAuditoriaPDF() {
+  const btn = document.getElementById('btnPdfAudit');
+  btn.classList.add('pdf-loading');
+  btn.textContent = 'Analizando con IA…';
+
+  try {
+    // Extraer datos actuales del dashboard
+    const data    = window._currentData || currentData || DEMO_DATA;
+    const cliente = document.getElementById('periodLabel')?.textContent || 'Cliente';
+
+    const campanas = data.campaigns || [];
+    const metrics  = data.metrics   || {};
+    const csvResumen = campanas.map(c =>
+      `${c.name} | Spend: $${c.spend} MXN | CTR: ${c.ctr}% | CPC: $${c.cpc} | CPM: ${c.cpm||'N/A'} | Frec: ${c.freq} | Acción sugerida: ${c.action||'N/A'}`
+    ).join('\n');
+
+    const totalSpend = metrics.spend || campanas.reduce((s,c) => s + (parseFloat(c.spend)||0), 0);
+
+    const masterPrompt = `Eres un Senior Meta Ads Auditor con 10+ años de experiencia. Tu análisis debe ser técnico, ejecutivo y 100% accionable. Sin relleno. Sin frases genéricas. Habla en español.
+
+DATOS DE LA CUENTA:
+Cliente: ${cliente}
+Total campañas: ${campanas.length}
+Presupuesto total del período: $${totalSpend} MXN
+CTR promedio cuenta: ${metrics.ctr||'N/A'}%
+CPC promedio: $${metrics.cpc||'N/A'}
+CPM promedio: $${metrics.cpm||'N/A'}
+Frecuencia promedio: ${metrics.freq||'N/A'}
+Impresiones: ${metrics.impressions||'N/A'}
+Clicks: ${metrics.link_clicks||'N/A'}
+
+DETALLE DE CAMPAÑAS:
+${csvResumen}
+
+GENERA UN REPORTE CON EXACTAMENTE ESTA ESTRUCTURA:
+
+## EXECUTIVE SUMMARY
+5 puntos críticos con el dato numérico que los sustenta.
+
+## DIAGNÓSTICO DE SALUD (escala 1-10 con justificación breve)
+- Eficiencia de presupuesto: X/10
+- Calidad estructural: X/10
+- Saturación de audiencias: X/10
+- Rendimiento de creativos: X/10
+- Puntuación global: X/10
+
+## DESPERDICIOS IDENTIFICADOS
+Lista: Campaña | Problema | Acción recomendada
+
+## ANÁLISIS TÉCNICO
+Estructura, rendimiento, señales de alerta. Específico con los nombres de campañas reales.
+
+## PLAN DE ACCIÓN PRIORIZADO
+🔴 URGENTE (esta semana): máx 3 acciones → impacto esperado
+🟡 PRIORITARIO (próximas 2 semanas): máx 4 acciones
+🟢 OPTIMIZACIÓN (próximo mes): máx 4 acciones
+
+## PROYECCIÓN DE MEJORA
+- Ahorro mensual estimado si se ejecutan acciones urgentes
+- Mejora de CTR proyectada
+- Reducción de CPC proyectada
+- Observación final: una línea con el hallazgo más importante.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: CLAUDE_HEADERS,
+      body: JSON.stringify({
+        model: CLAUDE_MODEL,
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: masterPrompt }]
+      })
+    });
+
+    if (!resp.ok) throw new Error(`API error ${resp.status}`);
+    const result   = await resp.json();
+    const analisis = result.content?.[0]?.text || 'Sin respuesta de la IA.';
+
+    btn.textContent = 'Generando PDF…';
+
+    // Construir PDF ejecutivo
+    const { jsPDF } = window.jspdf;
+    const pdf    = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW  = pdf.internal.pageSize.getWidth();
+    const pageH  = pdf.internal.pageSize.getHeight();
+    const margin = 16;
+    const usableW = pageW - margin * 2;
+    const accent  = [232, 52, 42];
+    const dark    = [26, 26, 26];
+    const gray    = [100, 100, 100];
+    const fecha   = new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
+
+    // Header portada
+    pdf.setFillColor(...accent);
+    pdf.rect(0, 0, pageW, 28, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('AUDITORÍA META ADS', margin, 14);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${cliente}  ·  ${fecha}`, margin, 21);
+    pdf.text('Proyecta · proyecta.mx', pageW - margin, 21, { align: 'right' });
+
+    // Línea decorativa
+    pdf.setDrawColor(...accent);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, 32, pageW - margin, 32);
+
+    // Renderizar contenido IA línea por línea con paginación
+    let y = 40;
+    const lineH = 6;
+    const maxY  = pageH - 18;
+
+    function checkPage() {
+      if (y > maxY) {
+        addFooter();
+        pdf.addPage();
+        // Mini header en páginas siguientes
+        pdf.setFillColor(...accent);
+        pdf.rect(0, 0, pageW, 10, 'F');
+        pdf.setTextColor(255,255,255);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('AUDITORÍA META ADS · PROYECTA', margin, 7);
+        y = 16;
+      }
+    }
+
+    function addFooter() {
+      pdf.setFillColor(245,245,245);
+      pdf.rect(0, pageH - 10, pageW, 10, 'F');
+      pdf.setTextColor(...gray);
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Generado con IA por Proyecta · ${fecha}`, margin, pageH - 4);
+      pdf.text(`Pág. ${pdf.internal.getCurrentPageInfo().pageNumber}`, pageW - margin, pageH - 4, { align: 'right' });
+    }
+
+    const lines = analisis.split('\n');
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) { y += 3; continue; }
+      checkPage();
+
+      // Secciones ## → título rojo
+      if (line.startsWith('## ')) {
+        y += 4;
+        checkPage();
+        pdf.setFillColor(...accent);
+        pdf.rect(margin, y - 4, usableW, 8, 'F');
+        pdf.setTextColor(255,255,255);
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(line.replace('## ', '').toUpperCase(), margin + 3, y + 0.5);
+        y += 8;
+        continue;
+      }
+
+      // Emojis de prioridad → badge de color
+      if (line.startsWith('🔴')) {
+        pdf.setFillColor(255, 235, 238);
+        pdf.rect(margin, y - 3.5, usableW, 7, 'F');
+        pdf.setTextColor(...accent);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('● URGENTE — ' + line.replace('🔴','').replace('URGENTE','').replace(/\(.*?\)/,'').trim(), margin + 2, y + 0.5);
+        y += lineH + 1;
+        continue;
+      }
+      if (line.startsWith('🟡')) {
+        pdf.setFillColor(255, 248, 225);
+        pdf.rect(margin, y - 3.5, usableW, 7, 'F');
+        pdf.setTextColor(180, 120, 0);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('● PRIORITARIO — ' + line.replace('🟡','').replace('PRIORITARIO','').replace(/\(.*?\)/,'').trim(), margin + 2, y + 0.5);
+        y += lineH + 1;
+        continue;
+      }
+      if (line.startsWith('🟢')) {
+        pdf.setFillColor(232, 245, 233);
+        pdf.rect(margin, y - 3.5, usableW, 7, 'F');
+        pdf.setTextColor(46, 125, 50);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('● OPTIMIZACIÓN — ' + line.replace('🟢','').replace('OPTIMIZACIÓN','').replace(/\(.*?\)/,'').trim(), margin + 2, y + 0.5);
+        y += lineH + 1;
+        continue;
+      }
+
+      // Subheadings ### o **texto**
+      if (line.startsWith('### ') || (line.startsWith('**') && line.endsWith('**'))) {
+        pdf.setTextColor(...dark);
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        const txt = line.replace(/^###\s*/, '').replace(/\*\*/g, '');
+        const wrapped = pdf.splitTextToSize(txt, usableW);
+        wrapped.forEach(l => { checkPage(); pdf.text(l, margin, y); y += lineH; });
+        continue;
+      }
+
+      // Bullets - o •
+      if (line.startsWith('- ') || line.startsWith('• ')) {
+        pdf.setTextColor(...dark);
+        pdf.setFontSize(8.5);
+        pdf.setFont('helvetica', 'normal');
+        const txt = '·  ' + line.replace(/^[-•]\s*/, '').replace(/\*\*/g, '');
+        const wrapped = pdf.splitTextToSize(txt, usableW - 4);
+        wrapped.forEach((l,i) => {
+          checkPage();
+          pdf.text(l, margin + (i > 0 ? 5 : 0), y);
+          y += lineH - 0.5;
+        });
+        continue;
+      }
+
+      // Texto normal
+      pdf.setTextColor(...dark);
+      pdf.setFontSize(8.5);
+      pdf.setFont('helvetica', 'normal');
+      const cleaned = line.replace(/\*\*/g, '');
+      const wrapped = pdf.splitTextToSize(cleaned, usableW);
+      wrapped.forEach(l => { checkPage(); pdf.text(l, margin, y); y += lineH; });
+    }
+
+    addFooter();
+
+    const fechaSlug = new Date().toISOString().slice(0,10);
+    const clienteSlug = cliente.replace(/\s/g,'-').toLowerCase();
+    pdf.save(`auditoria-${clienteSlug}-${fechaSlug}.pdf`);
+
+  } catch(e) {
+    alert('Error al generar la auditoría. Verifica que la API key esté configurada.');
+    console.error(e);
+  } finally {
+    btn.classList.remove('pdf-loading');
+    btn.innerHTML = '✦ Auditoría PDF';
+  }
+}
+
+// ========== INIT ==========
+document.addEventListener('DOMContentLoaded', () => {
+  setupCSV();
+  renderAll(DEMO_DATA);
+});
+</script>
+</body>
+</html>

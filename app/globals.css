@@ -1,26 +1,120 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ── Dark mode via .dark class ──────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Design tokens ──────────────────────────────────────── */
+@theme {
+  --color-accent:       #E8342A;
+  --color-accent-hover: #C42920;
+  --color-pgreen:       #1AB87A;
+  --color-pamber:       #F0A500;
+  --color-pblue:        #3A7BD5;
+
+  --font-sans:  'Roboto', -apple-system, sans-serif;
+  --font-mono:  'Roboto Mono', monospace;
+  --font-cond:  'Roboto Condensed', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 2px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); }
+
+/* ── Keyframes ──────────────────────────────────────────── */
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.35} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.fade-in { animation: fadeUp .4s cubic-bezier(.4,0,.2,1) both; }
+.animate-spin-slow { animation: spin .7s linear infinite; }
+.animate-pulse-dot { animation: pulse 2s infinite; }
+
+/* ── Format badges ──────────────────────────────────────── */
+.fmt-video    { border-left: 3px solid #00c2ff !important; color: #00c2ff !important; background: rgba(0,194,255,.08) !important; }
+.fmt-imagen   { border-left: 3px solid #00e5a0 !important; color: #00e5a0 !important; background: rgba(0,229,160,.08) !important; }
+.fmt-carrusel { border-left: 3px solid #ffd166 !important; color: #ffd166 !important; background: rgba(255,209,102,.08) !important; }
+.fmt-historia { border-left: 3px solid #a78bfa !important; color: #a78bfa !important; background: rgba(167,139,250,.08) !important; }
+.fmt-reel     { border-left: 3px solid #ff6b35 !important; color: #ff6b35 !important; background: rgba(255,107,53,.08) !important; }
+.fmt-default  { border-left: 3px solid rgba(0,0,0,.2) !important; }
+.dark .fmt-default { border-left: 3px solid rgba(255,255,255,.15) !important; }
+
+/* ── Action chips ────────────────────────────────────────── */
+.chip-scale    { background: rgba(26,184,122,.1);  color: #1AB87A; }
+.chip-pause    { background: rgba(232,52,42,.08);  color: #E8342A; }
+.chip-optimize { background: rgba(240,165,0,.1);   color: #F0A500; }
+.chip-stable   { background: rgba(0,0,0,.04); color: #86868B; border: 1px solid rgba(0,0,0,.08); }
+.dark .chip-stable { background: rgba(255,255,255,.06); color: #636366; border-color: rgba(255,255,255,.08); }
+
+/* ── Sidebar active indicator ────────────────────────────── */
+.nav-item-active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 22%; bottom: 22%;
+  width: 2.5px;
+  border-radius: 0 2px 2px 0;
+  background: #E8342A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── KPI card accent top edge on hover ───────────────────── */
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background .25s;
+  border-radius: 16px 16px 0 0;
+}
+.kpi-card:hover::after,
+.kpi-card-main::after { background: #E8342A; }
+
+/* ── Winner rainbow top edge ─────────────────────────────── */
+.winner-rainbow::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #E8342A 0%, #F0A500 50%, #E8342A 100%);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Variant card side stripe ────────────────────────────── */
+.variant-stripe-green::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; background:#1AB87A; }
+.variant-stripe-amber::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; background:#F0A500; }
+.variant-stripe-blue::before  { content:''; position:absolute; left:0; top:0; bottom:0; width:2.5px; background:#3A7BD5; }
+
+/* ── Idea card left stripe ───────────────────────────────── */
+.idea-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2.5px;
+  background: #E8342A;
 }
+
+/* ── Alert left border colors ────────────────────────────── */
+.alert-crit { border-left: 2.5px solid #E8342A; }
+.alert-warn { border-left: 2.5px solid #F0A500; }
+.alert-ok   { border-left: 2.5px solid #1AB87A; }
+.alert-info { border-left: 2.5px solid #3A7BD5; }
+
+/* ── Decision head backgrounds ───────────────────────────── */
+.dh-scale    { background: rgba(26,184,122,.08); }
+.dh-optimize { background: rgba(240,165,0,.08);  }
+.dh-pause    { background: rgba(232,52,42,.07);  }
+
+/* ── Gradient hero for upload zone ──────────────────────── */
+.grad-hero {
+  background: linear-gradient(160deg, #FAFAFA 0%, #F2F2F7 60%, #FAF0F0 100%);
+}
+.dark .grad-hero {
+  background: linear-gradient(160deg, #1C1C1E 0%, #141414 60%, #1E1414 100%);
+}
+
+/* ── Accent gradient button ──────────────────────────────── */
+.grad-accent { background: linear-gradient(135deg, #E8342A 0%, #FF4840 100%); }
+
+/* ── Modal transition ────────────────────────────────────── */
+.modal-box-enter  { transform: translateY(14px) scale(.98); }
+.modal-box-open   { transform: translateY(0) scale(1); transition: transform .3s cubic-bezier(.4,0,.2,1); }
