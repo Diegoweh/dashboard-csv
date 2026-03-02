@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function proxy(request: NextRequest) {
@@ -45,7 +46,12 @@ export async function proxy(request: NextRequest) {
   // Logged in + on a protected route → check admin role
   if (user && !isLoginPage && !isAuthRoute && !isUnauthorizedPage) {
     try {
-      const { data: profile, error } = await supabase
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const { data: profile, error } = await adminClient
         .from('profiles')
         .select('role')
         .eq('id', user.id)
