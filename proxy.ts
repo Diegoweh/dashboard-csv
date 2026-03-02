@@ -57,12 +57,15 @@ export async function proxy(request: NextRequest) {
         .eq('id', user.id)
         .single();
 
+      console.error('[proxy] user.id:', user.id, '| profile:', profile, '| error:', error);
+
       if (error || !profile || profile.role !== 'admin') {
         const url = request.nextUrl.clone();
         url.pathname = '/unauthorized';
         return NextResponse.redirect(url);
       }
-    } catch {
+    } catch (e) {
+      console.error('[proxy] caught exception:', e);
       const url = request.nextUrl.clone();
       url.pathname = '/unauthorized';
       return NextResponse.redirect(url);
