@@ -44,13 +44,19 @@ export async function middleware(request: NextRequest) {
 
   // Logged in + on a protected route → check admin role
   if (user && !isLoginPage && !isAuthRoute && !isUnauthorizedPage) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
 
-    if (!profile || profile.role !== 'admin') {
+      if (error || !profile || profile.role !== 'admin') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/unauthorized';
+        return NextResponse.redirect(url);
+      }
+    } catch {
       const url = request.nextUrl.clone();
       url.pathname = '/unauthorized';
       return NextResponse.redirect(url);
