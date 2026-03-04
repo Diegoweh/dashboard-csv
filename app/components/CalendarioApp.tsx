@@ -923,6 +923,87 @@ RESPONDE SOLO JSON PURO. Sin texto ni markdown.
   ];
   const allOk = checks.every(c => !!c.val.trim());
 
+  // ── Export ClickUp ────────────────────────────────────────
+  const exportarClickup = () => {
+    if (!lastData) return;
+    const { calOrg, calAds, d } = lastData;
+    const p = calAds.plan_ads || {} as CalAds['plan_ads'];
+    const fecha = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const etapaColor: Record<string, string> = { TOFU: '#3A7BD5', MOFU: '#F0A500', BOFU: '#E8342A', RETENCION: '#1AB87A', RETENCIÓN: '#1AB87A' };
+
+    let body = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Roboto',sans-serif;color:#1C1C1E;background:white;padding:32px;max-width:820px;margin:0 auto;}
+  .cover{text-align:center;padding:40px 0 32px;border-bottom:2px solid #E8342A;margin-bottom:32px;}
+  .cover-logo{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#E8342A;margin-bottom:8px;}
+  .cover-title{font-family:'Roboto Condensed',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px;}
+  .cover-sub{font-size:13px;color:#636366;}
+  .section-t{font-family:'Roboto Condensed',sans-serif;font-size:16px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #eee;}
+  .box{background:#F7F7FA;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#3C3C40;margin-bottom:16px;}
+  .week-blk{margin-bottom:16px;}
+  .week-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .week-name{font-family:'Roboto Condensed',sans-serif;font-size:15px;font-weight:700;}
+  .week-obj{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(232,52,42,.10);color:#E8342A;text-transform:uppercase;letter-spacing:.5px;}
+  .post-row{background:#FAFAFA;border-radius:8px;padding:10px 13px;margin-bottom:6px;border-left:3px solid #E8342A;}
+  .post-day{font-size:10px;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}
+  .post-tema{font-family:'Roboto Condensed',sans-serif;font-size:14px;font-weight:700;margin-bottom:2px;}
+  .post-meta{font-size:11px;color:#636366;}
+  .footer{text-align:center;margin-top:40px;padding-top:14px;border-top:1px solid #eee;font-size:11px;color:#8E8E93;}
+  @media print{body{padding:20px;}@page{margin:15mm;size:A4;}}
+</style></head><body>
+<div class="cover">
+  <div class="cover-logo">Proyecta · Brief ClickUp</div>
+  <div class="cover-title">${d.cliente}</div>
+  <div class="cover-sub">${d.mes} · ${d.rule.label}${d.rule2 ? ' + ' + d.rule2.label : ''}</div>
+</div>`;
+
+    if (p.narrativa_estrategica) {
+      body += `<div class="section-t">Estrategia del mes</div><div class="box">${p.narrativa_estrategica}</div>`;
+    }
+    if (calOrg?.resumen?.narrativa) {
+      body += `<div class="section-t">Resumen de contenido orgánico</div><div class="box">${calOrg.resumen.narrativa}</div>`;
+    }
+
+    body += `<div class="section-t">Calendario de contenido orgánico</div>`;
+    (calOrg?.semanas || []).forEach(sem => {
+      body += `<div class="week-blk"><div class="week-hdr"><span class="week-name">${sem.titulo}</span></div>`;
+      (sem.posts || []).forEach(post => {
+        const bc = etapaColor[(post.etapa || '').toUpperCase()] || '#E8342A';
+        body += `<div class="post-row" style="border-left-color:${bc}">
+          <div class="post-day">${post.dia} · ${post.formato}</div>
+          <div class="post-tema">${post.tema}</div>
+          <div class="post-meta">🎯 ${post.objetivo} &nbsp;|&nbsp; 📣 ${post.cta}</div>
+        </div>`;
+      });
+      body += `</div>`;
+    });
+
+    if ((calAds?.semanas || []).length) {
+      body += `<div class="section-t">Plan de Meta Ads — resumen</div>`;
+      (calAds.semanas || []).forEach(sem => {
+        body += `<div class="week-blk">
+          <div class="week-hdr">
+            <span class="week-name">${sem.semana}</span>
+            <span class="week-obj">${sem.objetivo_meta}</span>
+            <span style="font-size:11px;color:#636366;margin-left:auto">$${(sem.presupuesto_semana || 0).toLocaleString('es-MX')} MXN</span>
+          </div>
+          <div style="font-size:12px;color:#3C3C40;padding:8px 12px;background:#FAFAFA;border-radius:6px">${sem.justificacion || ''}</div>
+        </div>`;
+      });
+    }
+
+    body += `<div class="footer">Generado con Proyecta · Meta Ads Intelligence · ${fecha}</div></body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(body);
+    win.document.close();
+    setTimeout(() => win.print(), 600);
+  };
+
   // ── Generate ──────────────────────────────────────────────
   const confirmarGenerar = async () => {
     setModalOpen(false);
@@ -1197,7 +1278,7 @@ RESPONDE SOLO JSON PURO. Sin texto ni markdown.
             ))}
 
             {lastData && (
-              <div className="ml-auto py-2">
+              <div className="ml-auto py-2 flex gap-2">
                 <button
                   onClick={() => {
                     const { calOrg, d } = lastData;
@@ -1211,6 +1292,12 @@ RESPONDE SOLO JSON PURO. Sin texto ni markdown.
                   className="px-3 py-1.5 rounded-lg text-xs font-medium border border-black/8 dark:border-white/8 bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
                 >
                   📋 Copiar
+                </button>
+                <button
+                  onClick={exportarClickup}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium grad-accent text-white hover:opacity-90 transition-opacity"
+                >
+                  📌 Exportar ClickUp
                 </button>
               </div>
             )}
