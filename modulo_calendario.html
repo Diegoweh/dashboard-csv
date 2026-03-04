@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendario Estratégico v5 | Proyecta</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap');
+:root {
+  --accent:#E8342A; --accent-hover:#C42920;
+  --pgreen:#1AB87A; --pamber:#F0A500; --pblue:#3A7BD5;
+  --tofu:#3A7BD5; --mofu:#F0A500; --bofu:#E8342A; --ret:#1AB87A;
+  --bg:#F2F2F7; --surface:#FFFFFF; --surface2:#F7F7FA;
+  --border:rgba(0,0,0,0.08); --border-strong:rgba(0,0,0,0.13);
+  --text:#1C1C1E; --text-soft:#636366; --text-xs:#8E8E93;
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.07);
+  --shadow:0 2px 12px rgba(0,0,0,0.09);
+  --shadow-md:0 4px 20px rgba(0,0,0,0.11);
+  --r:10px; --rl:14px;
+}
+.dark {
+  --bg:#0F0F10; --surface:#1C1C1E; --surface2:#242426;
+  --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+  --text:#F2F2F7; --text-soft:#8E8E93; --text-xs:#636366;
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.3); --shadow:0 2px 12px rgba(0,0,0,0.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:13px;}
+body{font-family:'Roboto',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:2px;}
+.dark ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeUp .4s cubic-bezier(.4,0,.2,1) both;}
+.ls{opacity:0;animation:fadeUp .5s forwards;}
+.ls:nth-child(1){animation-delay:.4s}.ls:nth-child(2){animation-delay:1.4s}
+.ls:nth-child(3){animation-delay:2.4s}.ls:nth-child(4){animation-delay:3.4s}
+
+/* ── HEADER ── */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-sm);}
+.hbrand{display:flex;align-items:center;gap:10px;}
+.hlogo{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;font-family:'Roboto Condensed',sans-serif;}
+.htitle{font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--text);}
+.htitle span{color:var(--text-soft);font-weight:400;}
+.hright{display:flex;align-items:center;gap:8px;}
+.hbadge{font-size:10px;font-weight:500;padding:3px 8px;border-radius:20px;letter-spacing:.6px;text-transform:uppercase;background:rgba(232,52,42,.10);color:var(--accent);border:1px solid rgba(232,52,42,.2);}
+.dark-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .2s;}
+.dark-btn:hover{background:var(--border);}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:360px 1fr;height:calc(100vh - 52px);overflow:hidden;}
+
+/* ── SIDEBAR BRIEFING ── */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;height:100%;}
+.sec-title{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-xs);margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+.sec-sep{margin:16px 0 12px;font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-xs);padding-bottom:7px;border-bottom:1px solid var(--border);}
+.fg{margin-bottom:12px;}
+.fl{font-size:11px;font-weight:500;color:var(--text-soft);margin-bottom:4px;display:block;}
+.freq{color:var(--accent);margin-left:2px;}
+.fhint{font-size:10px;color:var(--text-xs);margin-top:3px;}
+.fi,.fs,.ft{width:100%;padding:7px 10px;border:1px solid var(--border-strong);border-radius:var(--r);font-family:'Roboto',sans-serif;font-size:12px;color:var(--text);background:var(--surface2);transition:border-color .2s,box-shadow .2s;outline:none;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(232,52,42,.12);background:var(--surface);}
+.ft{resize:vertical;min-height:58px;}
+.fs{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E93' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface2);color:var(--text-soft);transition:all .15s;user-select:none;}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.active{background:var(--accent);border-color:var(--accent);color:white;}
+
+/* Tono chips */
+.chip.tono-inspirador.active{background:#7C3AED;border-color:#7C3AED;}
+.chip.tono-profesional.active{background:#1D4ED8;border-color:#1D4ED8;}
+.chip.tono-cercano.active{background:#059669;border-color:#059669;}
+.chip.tono-urgente.active{background:#DC2626;border-color:#DC2626;}
+.chip.tono-educativo.active{background:#D97706;border-color:#D97706;}
+.chip.tono-divertido.active{background:#DB2777;border-color:#DB2777;}
+.chip.tono-lujoso.active{background:#1C1C1E;border-color:#1C1C1E;}
+.chip.tono-empatico.active{background:#0891B2;border-color:#0891B2;}
+.chip.tono-minimalista.active{background:#52525B;border-color:#52525B;}
+.chip.tono-storytelling.active{background:#7C3AED;border-color:#7C3AED;}
+
+/* Funnel preview */
+.funnel-prev{background:var(--surface2);border-radius:var(--r);padding:10px 12px;margin-bottom:12px;border:1px solid var(--border);}
+.frow{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:11px;}
+.fdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.flbl{font-weight:500;color:var(--text);}
+.fpct{color:var(--text-xs);margin-left:auto;font-family:'Roboto Mono',monospace;font-size:10px;}
+.fbar-bg{height:3px;background:var(--border);border-radius:3px;margin-top:-1px;margin-left:15px;margin-bottom:4px;}
+.fbar{height:100%;border-radius:3px;}
+
+/* Botón generar */
+.btn-gen{width:100%;padding:11px;margin-top:8px;background:linear-gradient(135deg,var(--accent) 0%,#FF4840 100%);color:white;border:none;border-radius:var(--r);font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:.4px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-gen:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,52,42,.35);}
+.btn-gen:disabled{opacity:.55;cursor:not-allowed;transform:none;filter:none;box-shadow:none;}
+
+/* ── MAIN OUTPUT ── */
+.main-out{display:flex;flex-direction:column;height:100%;min-height:0;overflow:hidden;}
+
+/* Tabs */
+.tabs-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:0;flex-shrink:0;z-index:90;}
+.tab{padding:14px 18px;font-size:12px;font-weight:500;color:var(--text-soft);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;user-select:none;display:flex;align-items:center;gap:6px;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+.tab-badge{font-size:10px;padding:1px 6px;border-radius:10px;background:var(--surface2);color:var(--text-xs);}
+.tab.active .tab-badge{background:rgba(232,52,42,.12);color:var(--accent);}
+.tab-actions{margin-left:auto;display:flex;gap:7px;padding:8px 0;}
+.btn-act{padding:6px 12px;border-radius:7px;font-family:'Roboto',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid var(--border-strong);display:flex;align-items:center;gap:5px;background:var(--surface2);color:var(--text-soft);}
+.btn-act:hover{background:var(--border);color:var(--text);}
+.btn-act.primary{background:var(--accent);color:white;border-color:var(--accent);}
+.btn-act.primary:hover{background:var(--accent-hover);}
+
+/* Tab content panels */
+.tab-panel{display:none;padding:22px 26px;overflow-y:auto;flex-direction:column;gap:16px;flex:1;min-height:0;}
+.tab-panel.active{display:flex;}
+
+/* ── EMPTY / LOADING ── */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:60px 40px;text-align:center;}
+.empty-ico{width:64px;height:64px;background:var(--surface);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.empty-t{font-family:'Roboto Condensed',sans-serif;font-size:20px;font-weight:700;}
+.empty-s{font-size:12px;color:var(--text-soft);max-width:300px;line-height:1.6;}
+.loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;}
+.lring{width:40px;height:40px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+.lt{font-family:'Roboto Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+.lsteps{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--text-soft);}
+
+/* ── OUTPUT HEADER ── */
+.out-hdr{background:var(--surface);border-radius:var(--rl);padding:14px 18px;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);}
+.out-client{font-family:'Roboto Condensed',sans-serif;font-size:18px;font-weight:700;}
+.out-meta{font-size:11px;color:var(--text-soft);margin-top:2px;}
+.out-acts{display:flex;gap:6px;}
+
+/* ── KPI ALERT ── */
+.kpi-alert{border-radius:var(--r);padding:11px 14px;display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.5;border-left:2.5px solid;}
+.kpi-alert.ok{background:rgba(26,184,122,.08);border-left-color:var(--pgreen);}
+.kpi-alert.warn{background:rgba(240,165,0,.08);border-left-color:var(--pamber);}
+.kpi-alert.err{background:rgba(232,52,42,.07);border-left-color:var(--accent);}
+.kat{font-weight:600;margin-bottom:2px;font-size:12px;}
+
+/* ── FUNNEL CARDS ── */
+.funnel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.fc{background:var(--surface);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow-sm);border:1px solid var(--border);border-top:2.5px solid;transition:transform .18s;}
+.fc:hover{transform:translateY(-2px);}
+.fc.tofu{border-top-color:var(--tofu);}
+.fc.mofu{border-top-color:var(--mofu);}
+.fc.bofu{border-top-color:var(--bofu);}
+.fc.ret{border-top-color:var(--ret);}
+.fc-lbl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-xs);margin-bottom:3px;}
+.fc-num{font-family:'Roboto Condensed',sans-serif;font-size:26px;font-weight:700;line-height:1;}
+.fc.tofu .fc-num{color:var(--tofu);}
+.fc.mofu .fc-num{color:var(--mofu);}
+.fc.bofu .fc-num{color:var(--bofu);}
+.fc.ret .fc-num{color:var(--ret);}
+.fc-name{font-size:10px;color:var(--text-soft);margin-top:2px;}
+
+/* ── WEEK SECTION ── */
+.week-title{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-soft);margin-bottom:8px;}
+.posts-col{display:flex;flex-direction:column;gap:8px;}
+
+/* ── POST CARD ── */
+.post-card{background:var(--surface);border-radius:var(--r);padding:13px 15px;box-shadow:var(--shadow-sm);border:1px solid var(--border);border-left:3px solid;animation:fadeUp .35s cubic-bezier(.4,0,.2,1) both;}
+.post-card:hover{box-shadow:var(--shadow);}
+.post-card.tofu{border-left-color:var(--tofu);}
+.post-card.mofu{border-left-color:var(--mofu);}
+.post-card.bofu{border-left-color:var(--bofu);}
+.post-card.ret{border-left-color:var(--ret);}
+.post-card.objection{border-left-color:#7C3AED;}
+.pc-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px;}
+.pc-date{font-size:10px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.6px;}
+.pc-badges{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;}
+.badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;}
+.b-tofu{background:rgba(58,123,213,.10);color:#3A7BD5;}
+.b-mofu{background:rgba(240,165,0,.10);color:#B07800;}
+.b-bofu{background:rgba(232,52,42,.10);color:var(--accent);}
+.b-ret{background:rgba(26,184,122,.10);color:#12875A;}
+.b-obj{background:rgba(124,58,237,.10);color:#7C3AED;}
+.b-fmt-reel{border-left:2px solid #ff6b35;color:#ff6b35;background:rgba(255,107,53,.09);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.b-fmt-video{border-left:2px solid #00c2ff;color:#00c2ff;background:rgba(0,194,255,.09);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.b-fmt-carrusel{border-left:2px solid #ffd166;color:#9a7a00;background:rgba(255,209,102,.09);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.b-fmt-historia{border-left:2px solid #a78bfa;color:#7c5cbf;background:rgba(167,139,250,.09);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.b-fmt-imagen{border-left:2px solid #00e5a0;color:#00875f;background:rgba(0,229,160,.09);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.b-fmt-default{border-left:2px solid var(--border-strong);color:var(--text-soft);background:var(--surface2);padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;}
+.pc-title{font-family:'Roboto Condensed',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px;line-height:1.3;}
+.pc-obj{font-size:11px;color:var(--text-soft);margin-bottom:9px;line-height:1.5;}
+.copy-blk{background:var(--surface2);border-radius:8px;padding:9px 11px;margin-bottom:8px;border:1px solid var(--border);}
+.copy-blk-t{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-xs);margin-bottom:7px;}
+.cs{margin-bottom:6px;}
+.cs:last-child{margin-bottom:0;}
+.cs-lbl{font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px;}
+.cs-txt{font-size:12px;color:var(--text);line-height:1.6;}
+.cs-scene{font-size:12px;color:var(--text);line-height:1.5;margin-bottom:2px;}
+.pc-footer{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-soft);padding-top:7px;border-top:1px solid var(--border);}
+.pfi{display:flex;align-items:flex-start;gap:4px;line-height:1.4;}
+
+/* ── ADS SYNC BANNER ── */
+.sync-banner{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--pamber);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--text-soft);display:flex;align-items:flex-start;gap:8px;margin-bottom:4px;}
+.sync-icon{flex-shrink:0;font-size:14px;}
+
+/* ── SUMMARY CARD ── */
+.summary-card{background:var(--text);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;}
+.summary-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent) 0%,var(--pamber) 50%,var(--accent) 100%);}
+.sc-t{font-family:'Roboto Condensed',sans-serif;font-size:15px;font-weight:700;color:white;margin-bottom:9px;}
+.sc-c{font-size:12px;color:rgba(255,255,255,.75);line-height:1.7;white-space:pre-line;}
+
+/* ── ADS PLAN PANEL ── */
+.ads-plan-week{background:var(--surface);border-radius:var(--rl);padding:16px 18px;box-shadow:var(--shadow-sm);border:1px solid var(--border);position:relative;}
+.ads-plan-week::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:var(--rl) 0 0 var(--rl);}
+.apw-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.apw-week{font-family:'Roboto Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--text);}
+.apw-obj{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;}
+.obj-alcance{background:rgba(58,123,213,.12);color:#3A7BD5;}
+.obj-trafico{background:rgba(240,165,0,.12);color:#B07800;}
+.obj-conversiones{background:rgba(232,52,42,.12);color:var(--accent);}
+.obj-mensajes{background:rgba(26,184,122,.12);color:#12875A;}
+.obj-retargeting{background:rgba(124,58,237,.12);color:#7C3AED;}
+.obj-interaccion{background:rgba(0,194,255,.12);color:#0088b3;}
+.apw-budget{font-size:11px;color:var(--text-soft);margin-left:auto;font-family:'Roboto Mono',monospace;}
+.apw-logic{font-size:12px;color:var(--text-soft);margin-bottom:14px;line-height:1.6;padding:9px 11px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);}
+
+/* Campaign set */
+.cset{border:1px solid var(--border-strong);border-radius:var(--r);padding:13px;margin-bottom:10px;}
+.cset:last-child{margin-bottom:0;}
+.cset-title{font-weight:600;font-size:12px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.cset-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(232,52,42,.10);color:var(--accent);letter-spacing:.5px;text-transform:uppercase;}
+.cset-tag.fria{background:rgba(58,123,213,.10);color:#3A7BD5;}
+.cset-tag.calida{background:rgba(26,184,122,.10);color:#12875A;}
+.ads-2col{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px;}
+.ads-blk{background:var(--surface2);border-radius:8px;padding:9px 11px;border:1px solid var(--border);}
+.ads-blk-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-xs);margin-bottom:6px;}
+.ads-item{font-size:11px;color:var(--text);line-height:1.4;margin-bottom:2px;display:flex;align-items:flex-start;gap:5px;}
+.ads-item::before{content:"•";color:var(--text-xs);flex-shrink:0;}
+.ads-item.excl{color:var(--accent);}
+.ads-item.excl::before{content:"✕";color:var(--accent);}
+
+/* Copy de ad */
+.ad-copy-blk{background:var(--surface2);border-radius:8px;padding:10px 12px;border:1px solid var(--border);margin-bottom:8px;}
+.ad-copy-blk.varb{border-color:rgba(58,123,213,.3);background:rgba(58,123,213,.04);}
+.acb-title{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;}
+.acb-title.vara{color:var(--accent);}
+.acb-title.varb{color:var(--pblue);}
+.ad-field{margin-bottom:6px;}
+.ad-field:last-child{margin-bottom:0;}
+.ad-field-lbl{font-size:9px;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:.8px;margin-bottom:2px;}
+.ad-field-val{font-size:12px;color:var(--text);line-height:1.5;}
+.ad-field-hint{font-size:10px;color:var(--text-xs);margin-top:1px;font-family:'Roboto Mono',monospace;}
+
+/* Brief creativo */
+.brief-blk{background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.2);border-radius:8px;padding:9px 11px;margin-top:8px;}
+.brief-lbl{font-size:9px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.brief-item{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:3px;display:flex;align-items:flex-start;gap:5px;}
+.brief-item::before{content:"→";color:#7C3AED;flex-shrink:0;}
+
+/* Reglas de decisión */
+.decision-blk{margin-top:10px;}
+.decision-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-xs);margin-bottom:6px;}
+.dec-rule{font-size:11px;color:var(--text);line-height:1.5;margin-bottom:4px;padding:6px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);display:flex;align-items:flex-start;gap:7px;}
+.dec-rule .dr-icon{flex-shrink:0;}
+
+/* Sync orgánico */
+.sync-blk{background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.25);border-radius:8px;padding:9px 12px;margin-top:10px;font-size:11px;color:var(--text);line-height:1.6;}
+.sync-blk-lbl{font-size:9px;font-weight:700;color:var(--pamber);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+
+/* Meta ads config */
+.ads-notice{font-size:11px;border-radius:6px;padding:6px 9px;margin-top:6px;display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+.ads-notice.cfg{background:rgba(58,123,213,.08);color:#2558A8;border-left:2px solid var(--pblue);}
+.ads-notice.warn{background:rgba(240,165,0,.08);color:#8A6000;border-left:2px solid var(--pamber);}
+.ads-notice.danger{background:rgba(232,52,42,.07);color:#A82020;border-left:2px solid var(--accent);}
+
+/* Alertas */
+.alert-item{background:var(--surface);border-radius:var(--r);padding:9px 13px;box-shadow:var(--shadow-sm);border:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);line-height:1.5;}
+.alert-item.fecha_clave{border-left:2.5px solid var(--pblue);}
+.alert-item.produccion{border-left:2.5px solid var(--pamber);}
+.alert-item.riesgo{border-left:2.5px solid var(--accent);}
+.ai{font-size:14px;flex-shrink:0;margin-top:1px;}
+
+/* ── CHECKLIST MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border-radius:var(--rl);padding:24px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:fadeUp .3s cubic-bezier(.4,0,.2,1);}
+.modal-title{font-family:'Roboto Condensed',sans-serif;font-size:17px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.check-list{display:flex;flex-direction:column;gap:7px;margin-bottom:18px;}
+.check-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:12px;background:var(--surface2);border:1px solid var(--border);}
+.check-item.ok{background:rgba(26,184,122,.07);border-color:rgba(26,184,122,.25);}
+.check-item.fail{background:rgba(232,52,42,.07);border-color:rgba(232,52,42,.25);}
+.check-icon{font-size:14px;flex-shrink:0;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-cancel{padding:8px 16px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface2);color:var(--text-soft);font-family:'Roboto',sans-serif;font-size:12px;font-weight:500;cursor:pointer;}
+.modal-cancel:hover{background:var(--border);}
+.modal-confirm{padding:8px 18px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent),#FF4840);color:white;font-family:'Roboto Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:filter .2s;}
+.modal-confirm:hover{filter:brightness(1.08);}
+.modal-confirm:disabled{opacity:.5;cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="modal-checklist">
+  <div class="modal-box">
+    <div class="modal-title">✅ Confirmar generación</div>
+    <div class="check-list" id="check-list"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmarGenerar()">Generar ahora</button>
+    </div>
+  </div>
+</div>
+
+<header class="header">
+  <div class="hbrand">
+    <div class="hlogo">P</div>
+    <span class="htitle">Proyecta <span>/ Calendario Estratégico</span></span>
+  </div>
+  <div class="hright">
+    <div class="hbadge">v5.0</div>
+    <button class="dark-btn" onclick="toggleDark()" title="Dark mode">🌙</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ══ SIDEBAR BRIEFING ══ -->
+  <aside class="sidebar">
+    <div class="sec-title">🔑 API Key (pruebas locales)</div>
+    <div class="fg">
+      <input type="password" class="fi" id="f-apikey" placeholder="sk-ant-...">
+      <div class="fhint">No se guarda. No compartir.</div>
+    </div>
+
+    <div class="sec-title">📋 Cliente</div>
+    <div class="fg">
+      <label class="fl">Cliente <span class="freq">*</span></label>
+      <input type="text" class="fi" id="f-cliente" placeholder="Ej: Gran Acuario Mazatlán">
+    </div>
+    <div class="fg">
+      <label class="fl">Industria <span class="freq">*</span></label>
+      <select class="fs" id="f-industria">
+        <option value="">Seleccionar...</option>
+        <option>Turismo / Atracción</option>
+        <option>Hotel / Hospedaje</option>
+        <option>Food &amp; Lifestyle</option>
+        <option>Healthcare / Salud</option>
+        <option>Ecommerce</option>
+        <option>B2B / Servicios</option>
+        <option>Retail / Comercio</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">Mes a planear <span class="freq">*</span></label>
+      <select class="fs" id="f-mes">
+        <option value="">Seleccionar...</option>
+        <option>Enero 2026</option><option>Febrero 2026</option><option>Marzo 2026</option>
+        <option>Abril 2026</option><option>Mayo 2026</option><option>Junio 2026</option>
+        <option>Julio 2026</option><option>Agosto 2026</option><option>Septiembre 2026</option>
+        <option>Octubre 2026</option><option>Noviembre 2026</option><option>Diciembre 2026</option>
+      </select>
+    </div>
+
+    <div class="sec-sep">🎯 KPI & Objetivos</div>
+    <div class="fg">
+      <label class="fl">KPI principal <span class="freq">*</span></label>
+      <select class="fs" id="f-kpi">
+        <option value="">Seleccionar...</option>
+        <option value="mensajes_ventas">💬 Mensajes / Ventas directas</option>
+        <option value="reservaciones">📅 Reservaciones / Citas</option>
+        <option value="trafico_web">🌐 Tráfico a sitio web</option>
+        <option value="awareness">📣 Awareness / Seguidores</option>
+        <option value="retencion">🔁 Retención / Recompra</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl">KPI secundario <span style="color:var(--text-xs);font-weight:400">(opcional)</span></label>
+      <select class="fs" id="f-kpi2">
+        <option value="">Ninguno</option>
+        <option value="mensajes_ventas">💬 Mensajes / Ventas directas</option>
+        <option value="reservaciones">📅 Reservaciones / Citas</option>
+        <option value="trafico_web">🌐 Tráfico a sitio web</option>
+        <option value="awareness">📣 Awareness / Seguidores</option>
+        <option value="retencion">🔁 Retención / Recompra</option>
+        <option value="leads">📋 Leads / Formularios</option>
+      </select>
+      <div class="fhint">Ej: Hotel → KPI1 Reservaciones + KPI2 Mensajes</div>
+    </div>
+    <div class="fg">
+      <label class="fl">Posteos orgánicos por mes</label>
+      <div class="chips" id="chips-posteos">
+        <div class="chip" data-val="4" onclick="selPosteos(this)">4</div>
+        <div class="chip active" data-val="8" onclick="selPosteos(this)">8</div>
+        <div class="chip" data-val="12" onclick="selPosteos(this)">12</div>
+      </div>
+      <div class="fhint">4=1/sem · 8=2/sem · 12=3/sem</div>
+    </div>
+
+    <div class="sec-sep">💰 Presupuesto & Ads</div>
+    <div class="fg">
+      <label class="fl">Presupuesto Meta Ads mensual <span class="freq">*</span></label>
+      <input type="text" class="fi" id="f-presupuesto" placeholder="Ej: 15000">
+      <div class="fhint">Solo número en MXN. El sistema distribuye por semana.</div>
+    </div>
+    <div class="fg">
+      <label class="fl">¿Tiene Pixel activo?</label>
+      <div class="chips" id="chips-pixel">
+        <div class="chip active" data-val="Sí" onclick="selSingle(this,'chips-pixel')">Sí</div>
+        <div class="chip" data-val="No" onclick="selSingle(this,'chips-pixel')">No</div>
+        <div class="chip" data-val="En proceso" onclick="selSingle(this,'chips-pixel')">En proceso</div>
+      </div>
+    </div>
+    <div class="fg">
+      <label class="fl">¿Tiene audiencias personalizadas?</label>
+      <div class="chips" id="chips-auds">
+        <div class="chip active" data-val="Sí" onclick="selSingle(this,'chips-auds')">Sí</div>
+        <div class="chip" data-val="No" onclick="selSingle(this,'chips-auds')">No</div>
+      </div>
+    </div>
+
+    <div class="sec-sep">🎯 Perfil de Cliente Ideal</div>
+    <div class="fg">
+      <label class="fl">Segmento principal <span class="freq">*</span></label>
+      <input type="text" class="fi" id="f-segmento" placeholder="Ej: Familias 28-45 años, Mazatlán">
+    </div>
+    <div class="fg">
+      <label class="fl">Pain point principal</label>
+      <input type="text" class="fi" id="f-pain" placeholder="Ej: No saben qué hacer en vacaciones">
+    </div>
+    <div class="fg">
+      <label class="fl">¿Qué le impide comprar? (objeción #1) <span class="freq">*</span></label>
+      <input type="text" class="fi" id="f-objecion" placeholder="Ej: Precio, desconfianza, no sabe que existe">
+      <div class="fhint">Se generará un post que destruya esta objeción directamente.</div>
+    </div>
+    <div class="fg">
+      <label class="fl">Qué lo mueve a comprar</label>
+      <input type="text" class="fi" id="f-motivacion" placeholder="Ej: Urgencia, precio, recomendaciones">
+    </div>
+
+    <div class="sec-sep">🎭 Tono de Marca</div>
+    <div class="fg">
+      <div class="chips" id="chips-tono">
+        <div class="chip tono-inspirador" data-val="Inspirador / aspiracional" onclick="selSingle(this,'chips-tono')">✨ Inspirador</div>
+        <div class="chip tono-profesional" data-val="Profesional / formal" onclick="selSingle(this,'chips-tono')">💼 Profesional</div>
+        <div class="chip tono-cercano active" data-val="Cercano / casual" onclick="selSingle(this,'chips-tono')">😊 Cercano</div>
+        <div class="chip tono-urgente" data-val="Urgente / directo" onclick="selSingle(this,'chips-tono')">⚡ Urgente</div>
+        <div class="chip tono-educativo" data-val="Educativo / experto" onclick="selSingle(this,'chips-tono')">📚 Educativo</div>
+        <div class="chip tono-divertido" data-val="Divertido / irreverente" onclick="selSingle(this,'chips-tono')">🎉 Divertido</div>
+        <div class="chip tono-lujoso" data-val="Lujoso / exclusivo" onclick="selSingle(this,'chips-tono')">💎 Lujoso</div>
+        <div class="chip tono-empatico" data-val="Empático / humano" onclick="selSingle(this,'chips-tono')">🤝 Empático</div>
+        <div class="chip tono-minimalista" data-val="Minimalista / limpio" onclick="selSingle(this,'chips-tono')">◻ Minimalista</div>
+        <div class="chip tono-storytelling" data-val="Narrativo / storytelling" onclick="selSingle(this,'chips-tono')">📖 Storytelling</div>
+      </div>
+      <div class="fhint" style="margin-top:6px">O describe el tono específico:</div>
+      <input type="text" class="fi" id="f-tono-custom" placeholder="Ej: Como un amigo experto en salud" style="margin-top:5px">
+    </div>
+
+    <div class="sec-sep">📱 Plataformas</div>
+    <div class="fg">
+      <div class="chips" id="chips-plats">
+        <div class="chip" data-val="Instagram" onclick="toggleChip(this)">Instagram</div>
+        <div class="chip" data-val="Facebook" onclick="toggleChip(this)">Facebook</div>
+        <div class="chip" data-val="TikTok" onclick="toggleChip(this)">TikTok</div>
+        <div class="chip" data-val="LinkedIn" onclick="toggleChip(this)">LinkedIn</div>
+        <div class="chip" data-val="YouTube Shorts" onclick="toggleChip(this)">YouTube Shorts</div>
+      </div>
+    </div>
+
+    <div class="sec-sep">📆 Contexto</div>
+    <div class="fg">
+      <label class="fl">Temporada / fechas especiales</label>
+      <input type="text" class="fi" id="f-temporada" placeholder="Ej: Semana Santa, Día de las Madres">
+    </div>
+    <div class="fg">
+      <label class="fl">Historial de contenido exitoso</label>
+      <textarea class="ft" id="f-historial" placeholder="Ej: Reels de experiencias, testimonios..."></textarea>
+    </div>
+    <div class="fg">
+      <label class="fl">Restricciones</label>
+      <textarea class="ft" id="f-restricciones" placeholder="Ej: No mostrar precios, CTA a WhatsApp..."></textarea>
+    </div>
+
+    <div class="sec-sep">📊 Distribución funnel orgánico</div>
+    <div class="funnel-prev" id="funnel-prev">
+      <div class="frow"><div class="fdot" style="background:var(--tofu)"></div><div class="flbl">Atracción (TOFU)</div><div class="fpct">~25%</div></div>
+      <div class="fbar-bg"><div class="fbar" style="width:25%;background:var(--tofu)"></div></div>
+      <div class="frow"><div class="fdot" style="background:var(--mofu)"></div><div class="flbl">Consideración (MOFU)</div><div class="fpct">~38%</div></div>
+      <div class="fbar-bg"><div class="fbar" style="width:38%;background:var(--mofu)"></div></div>
+      <div class="frow"><div class="fdot" style="background:var(--bofu)"></div><div class="flbl">Conversión (BOFU)</div><div class="fpct">~22%</div></div>
+      <div class="fbar-bg"><div class="fbar" style="width:22%;background:var(--bofu)"></div></div>
+      <div class="frow"><div class="fdot" style="background:var(--ret)"></div><div class="flbl">Retención</div><div class="fpct">~15%</div></div>
+      <div class="fbar-bg"><div class="fbar" style="width:15%;background:var(--ret)"></div></div>
+    </div>
+
+    <button class="btn-gen" id="btn-gen" onclick="abrirChecklist()">
+      ✦ Generar Plan Completo
+    </button>
+  </aside>
+
+  <!-- ══ MAIN OUTPUT ══ -->
+  <div class="main-out">
+    <div class="tabs-bar">
+      <div class="tab active" id="tab-organico" onclick="switchTab('organico')">
+        📅 Calendario Orgánico <span class="tab-badge" id="tbadge-organico">—</span>
+      </div>
+      <div class="tab" id="tab-ads" onclick="switchTab('ads')">
+        📣 Plan de Meta Ads <span class="tab-badge" id="tbadge-ads">—</span>
+      </div>
+      <div class="tab-actions">
+        <button class="btn-act" onclick="copiarTexto()">📋 Copiar</button>
+        <button class="btn-act primary" onclick="exportarPDF()">📌 Exportar ClickUp</button>
+      </div>
+    </div>
+
+    <!-- TAB ORGÁNICO -->
+    <div class="tab-panel active" id="panel-organico">
+      <div class="empty" id="empty-organico">
+        <div class="empty-ico">📅</div>
+        <div class="empty-t">Calendario Orgánico</div>
+        <div class="empty-s">Completa el briefing y genera el plan completo. El contenido orgánico estará sincronizado semana a semana con tus campañas de Meta Ads.</div>
+      </div>
+    </div>
+
+    <!-- TAB ADS -->
+    <div class="tab-panel" id="panel-ads">
+      <div class="empty" id="empty-ads">
+        <div class="empty-ico">📣</div>
+        <div class="empty-t">Plan de Meta Ads</div>
+        <div class="empty-s">El plan incluye arquitectura por semana, conjuntos de anuncios, copy A/B, brief para diseñador y reglas de decisión de optimización.</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const API_URL = "https://api.anthropic.com/v1/messages";
+
+// ── KPI RULES ──────────────────────────────────────────────────────────────
+const KPI_RULES = {
+  mensajes_ventas: {
+    label:'Mensajes / Ventas directas',
+    dist:{tofu:2,mofu:4,bofu:4,retencion:2}, desc_dist:'TOFU 2, MOFU 4, BOFU 4, RET 2',
+    minBOFU:30, minMOFU_BOFU:55, desc:'≥30% BOFU y ≥55% MOFU+BOFU.'
+  },
+  reservaciones: {
+    label:'Reservaciones / Citas',
+    dist:{tofu:2,mofu:5,bofu:4,retencion:1}, desc_dist:'TOFU 2, MOFU 5, BOFU 4, RET 1',
+    minBOFU:25, minMOFU_BOFU:60, desc:'≥60% combinado MOFU+BOFU.'
+  },
+  trafico_web: {
+    label:'Tráfico web / Landing',
+    dist:{tofu:3,mofu:4,bofu:3,retencion:2}, desc_dist:'TOFU 3, MOFU 4, BOFU 3, RET 2',
+    minBOFU:20, minMOFU_BOFU:45, desc:'≥45% combinado MOFU+BOFU.'
+  },
+  awareness: {
+    label:'Awareness / Seguidores',
+    dist:{tofu:5,mofu:4,bofu:2,retencion:1}, desc_dist:'TOFU 5, MOFU 4, BOFU 2, RET 1',
+    minTOFU:40, desc:'≥40% TOFU.'
+  },
+  retencion: {
+    label:'Retención / Recompra',
+    dist:{tofu:2,mofu:4,bofu:3,retencion:3}, desc_dist:'TOFU 2, MOFU 4, BOFU 3, RET 3',
+    minRET:25, desc:'≥25% Retención.'
+  },
+  leads: {
+    label:'Leads / Formularios',
+    dist:{tofu:3,mofu:5,bofu:3,retencion:1}, desc_dist:'TOFU 3, MOFU 5, BOFU 3, RET 1',
+    minMOFU_BOFU:65, desc:'≥65% MOFU+BOFU. Foco en captura de contacto calificado.'
+  }
+};
+
+// Estructura de funnel de ads por industria (base = 4 semanas)
+const INDUSTRY_FUNNEL = {
+  'Turismo / Atracción': [
+    {semana:'Semana 1', obj_meta:'Alcance', fase:'TOFU', pct:20, razon:'Generar awareness masivo antes de temporada'},
+    {semana:'Semana 2', obj_meta:'Tráfico', fase:'MOFU', pct:30, razon:'Llevar audiencia cálida al sitio/landing'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:30, razon:'Convertir interesados con oferta clara'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Recuperar visitantes sin conversión + urgencia'}
+  ],
+  'Hotel / Hospedaje': [
+    {semana:'Semana 1', obj_meta:'Alcance', fase:'TOFU', pct:20, razon:'Brand awareness + temporada o fecha especial'},
+    {semana:'Semana 2', obj_meta:'Mensajes', fase:'MOFU', pct:25, razon:'Generar consultas directas de interesados'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:30, razon:'Reservas directas con CTA específico'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:25, razon:'Retargeting visitantes + audiencia similar a huéspedes'}
+  ],
+  'Food & Lifestyle': [
+    {semana:'Semana 1', obj_meta:'Alcance', fase:'TOFU', pct:25, razon:'Mostrar producto/experiencia a audiencia nueva'},
+    {semana:'Semana 2', obj_meta:'Interacción', fase:'MOFU', pct:25, razon:'Engagement con oferta o contenido viral'},
+    {semana:'Semana 3', obj_meta:'Mensajes', fase:'BOFU', pct:30, razon:'Pedidos directos o reservas de mesa'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Recuperar audiencia cálida que no convirtió'}
+  ],
+  'Healthcare / Salud': [
+    {semana:'Semana 1', obj_meta:'Tráfico', fase:'TOFU', pct:25, razon:'Educar y generar tráfico a contenido de valor'},
+    {semana:'Semana 2', obj_meta:'Mensajes', fase:'MOFU', pct:30, razon:'Generar consultas y agendar citas'},
+    {semana:'Semana 3', obj_meta:'Mensajes', fase:'BOFU', pct:30, razon:'Citas directas + superar objeción de confianza'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:15, razon:'Retargeting visitantes sin agendar'}
+  ],
+  'B2B / Servicios': [
+    {semana:'Semana 1', obj_meta:'Tráfico', fase:'TOFU', pct:25, razon:'Generar tráfico a contenido de autoridad'},
+    {semana:'Semana 2', obj_meta:'Tráfico', fase:'MOFU', pct:25, razon:'Lead magnet o demo a audiencia interesada'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:30, razon:'Leads calificados o solicitud de propuesta'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Retargeting de visitantes y leads fríos'}
+  ],
+  'Retail / Comercio': [
+    {semana:'Semana 1', obj_meta:'Alcance', fase:'TOFU', pct:20, razon:'Reach masivo: producto + oferta del mes'},
+    {semana:'Semana 2', obj_meta:'Tráfico', fase:'MOFU', pct:25, razon:'Llevar tráfico a tienda o catálogo online'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:35, razon:'Ventas directas + urgencia temporal'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Carritos abandonados + clientes anteriores'}
+  ],
+  'Ecommerce': [
+    {semana:'Semana 1', obj_meta:'Tráfico', fase:'TOFU', pct:20, razon:'Llevar tráfico frío a la tienda online / landing de producto'},
+    {semana:'Semana 2', obj_meta:'Conversiones', fase:'MOFU', pct:25, razon:'Conversiones a audiencia que ya visitó la tienda'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:35, razon:'Campaña de ventas con oferta / urgencia + catálogo dinámico'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Retargeting carritos abandonados + compradores anteriores (upsell)'}
+  ],
+  'Otro': [
+    {semana:'Semana 1', obj_meta:'Alcance', fase:'TOFU', pct:25, razon:'Generar awareness del negocio'},
+    {semana:'Semana 2', obj_meta:'Tráfico', fase:'MOFU', pct:25, razon:'Educar y generar consideración'},
+    {semana:'Semana 3', obj_meta:'Conversiones', fase:'BOFU', pct:30, razon:'Conversión directa al KPI principal'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Retargeting de audiencia cálida'}
+  ]
+};
+
+// Días óptimos por plataforma
+const DIAS_OPTIMOS = {
+  'Instagram':      ['Martes','Miércoles','Viernes'],
+  'Facebook':       ['Miércoles','Jueves','Sábado'],
+  'TikTok':         ['Lunes','Jueves','Domingo'],
+  'LinkedIn':       ['Martes','Miércoles','Jueves'],
+  'YouTube Shorts': ['Viernes','Sábado','Domingo']
+};
+
+// ── HELPERS UI ──────────────────────────────────────────────────────────────
+function toggleChip(el){ el.classList.toggle('active'); }
+function selSingle(el, groupId){
+  document.querySelectorAll('#'+groupId+' .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+function selPosteos(el){ selSingle(el,'chips-posteos'); }
+function getChipVal(groupId){ const el=document.querySelector('#'+groupId+' .chip.active'); return el?el.dataset.val:''; }
+function getChipsVals(groupId){ return [...document.querySelectorAll('#'+groupId+' .chip.active')].map(c=>c.dataset.val); }
+function getPlataformas(){ const v=getChipsVals('chips-plats'); return v.length?v.join(', '):'Instagram, Facebook'; }
+function getPosteos(){ return parseInt(getChipVal('chips-posteos'))||8; }
+function getTono(){ const custom=document.getElementById('f-tono-custom').value.trim(); return custom||getChipVal('chips-tono')||'Cercano / casual'; }
+function switchTab(t){
+  ['organico','ads'].forEach(id=>{
+    const panel=document.getElementById('panel-'+id);
+    panel.classList.toggle('active',id===t);
+    document.getElementById('tab-'+id).classList.toggle('active',id===t);
+    if(id===t) panel.scrollTop=0;
+  });
+}
+function toggleDark(){ document.documentElement.classList.toggle('dark'); document.querySelector('.dark-btn').textContent=document.documentElement.classList.contains('dark')?'☀️':'🌙'; }
+
+// ── CHECKLIST MODAL ──────────────────────────────────────────────────────────
+function abrirChecklist(){
+  const checks = [
+    { label:'Cliente', val:document.getElementById('f-cliente').value.trim() },
+    { label:'Industria', val:document.getElementById('f-industria').value },
+    { label:'KPI principal', val:document.getElementById('f-kpi').value },
+    { label:'Mes', val:document.getElementById('f-mes').value },
+    { label:'Presupuesto Meta Ads', val:document.getElementById('f-presupuesto').value.trim() },
+    { label:'Segmento / ICA', val:document.getElementById('f-segmento').value.trim() },
+    { label:'Objeción principal del ICA', val:document.getElementById('f-objecion').value.trim() },
+    { label:'API Key', val:document.getElementById('f-apikey').value.trim() },
+  ];
+  const kpi1=document.getElementById('f-kpi').value, kpi2=document.getElementById('f-kpi2').value;
+  const kpiConflict = kpi1&&kpi2&&kpi1===kpi2;
+  const plats = getChipsVals('chips-plats');
+
+  let html='', allOk=true;
+  checks.forEach(c=>{
+    const ok=!!c.val;
+    if(!ok)allOk=false;
+    html+=`<div class="check-item ${ok?'ok':'fail'}"><span class="check-icon">${ok?'✅':'❌'}</span><span>${c.label}${ok?'':' — <strong>requerido</strong>'}</span></div>`;
+  });
+  if(kpiConflict){
+    allOk=false;
+    html+=`<div class="check-item fail"><span class="check-icon">⚠️</span><span>KPI1 y KPI2 son iguales — el secundario no aportará valor adicional</span></div>`;
+  }
+  if(plats.length===0){
+    html+=`<div class="check-item warn" style="background:rgba(240,165,0,.07);border-color:rgba(240,165,0,.3)"><span class="check-icon">⚠️</span><span>Sin plataformas seleccionadas — se usará Instagram y Facebook por defecto</span></div>`;
+  }
+  // Resumen de lo que se va a generar
+  const posteos=getPosteos(), presup=document.getElementById('f-presupuesto').value.trim();
+  html+=`<div class="check-item ok" style="margin-top:4px"><span class="check-icon">📋</span><span>Se generarán <strong>${posteos} posts orgánicos</strong> + plan de <strong>4 semanas de Meta Ads</strong>${presup?' con $'+presup+' MXN':''}</span></div>`;
+
+  document.getElementById('check-list').innerHTML=html;
+  document.getElementById('modal-confirm-btn').disabled=!allOk;
+  document.getElementById('modal-checklist').classList.add('open');
+}
+function closeModal(){ document.getElementById('modal-checklist').classList.remove('open'); }
+function confirmarGenerar(){ closeModal(); generarPlan(); }
+
+// ── BUILD PROMPTS ────────────────────────────────────────────────────────────
+function buildData(){
+  const kpi=document.getElementById('f-kpi').value;
+  const rule=KPI_RULES[kpi]||KPI_RULES.mensajes_ventas;
+  const rule2=document.getElementById('f-kpi2').value?KPI_RULES[document.getElementById('f-kpi2').value]:null;
+  const posteos=getPosteos();
+  const factor=posteos/12;
+  const dist={
+    tofu:Math.round(rule.dist.tofu*factor),
+    mofu:Math.round(rule.dist.mofu*factor),
+    bofu:Math.round(rule.dist.bofu*factor),
+    retencion:Math.round(rule.dist.retencion*factor)
+  };
+  const suma=dist.tofu+dist.mofu+dist.bofu+dist.retencion;
+  if(suma<posteos) dist.mofu+=posteos-suma;
+  if(suma>posteos) dist.mofu-=suma-posteos;
+  const industria=document.getElementById('f-industria').value||'Otro';
+  const funnel=INDUSTRY_FUNNEL[industria]||INDUSTRY_FUNNEL['Otro'];
+  const plats=getPlataformas();
+  const diasOptimos=DIAS_OPTIMOS[plats.split(',')[0].trim()]||['Martes','Jueves','Sábado'];
+  const presupuesto=parseInt(document.getElementById('f-presupuesto').value)||0;
+  return {
+    cliente:document.getElementById('f-cliente').value.trim(),
+    industria, kpi, rule, kpi2:document.getElementById('f-kpi2').value, rule2,
+    posteos, dist, funnel, plats, diasOptimos, presupuesto,
+    mes:document.getElementById('f-mes').value,
+    segmento:document.getElementById('f-segmento').value.trim(),
+    pain:document.getElementById('f-pain').value.trim(),
+    objecion:document.getElementById('f-objecion').value.trim(),
+    motivacion:document.getElementById('f-motivacion').value.trim(),
+    tono:getTono(),
+    pixel:getChipVal('chips-pixel'),
+    audiencias_custom:getChipVal('chips-auds'),
+    temporada:document.getElementById('f-temporada').value.trim(),
+    historial:document.getElementById('f-historial').value.trim(),
+    restricciones:document.getElementById('f-restricciones').value.trim(),
+  };
+}
+
+function buildPromptOrganico(d){
+  const kpi2line=d.rule2?`KPI secundario: ${d.rule2.label} (generar contenido que sirva a ambos)`:'';
+  const descDist=`TOFU ${d.dist.tofu}, MOFU ${d.dist.mofu}, BOFU ${d.dist.bofu}, RETENCION ${d.dist.retencion}`;
+  const porSemana=Math.ceil(d.posteos/4);
+  const activeFunnel = d.kpi==='leads' ? [
+    {semana:'Semana 1', obj_meta:'Tráfico', fase:'TOFU'},
+    {semana:'Semana 2', obj_meta:'Lead Ads', fase:'MOFU'},
+    {semana:'Semana 3', obj_meta:'Lead Ads', fase:'BOFU'},
+    {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+'}
+  ] : d.funnel;
+  const syncLines=activeFunnel.map((f,i)=>`- Semana ${i+1} (ads: ${f.obj_meta} / ${f.fase}): el orgánico de esta semana debe REFORZAR ese objetivo, no contradecirlo`).join('\n');
+  return `Eres el estratega de contenido senior de Proyecta (agencia de marketing digital, México). Genera un calendario de contenido orgánico mensual 100% conectado al funnel de Meta Ads.
+
+BRIEFING:
+Cliente: ${d.cliente}
+Industria: ${d.industria}
+KPI principal: ${d.rule.label}
+${kpi2line}
+Mes: ${d.mes}
+Plataformas: ${d.plats}
+Días óptimos de publicación: ${d.diasOptimos.join(', ')}
+Segmento ICA: ${d.segmento}
+Pain point: ${d.pain||'No especificado'}
+Objeción #1 que impide la compra: ${d.objecion}
+Motivador de compra: ${d.motivacion||'No especificado'}
+Tono de marca: ${d.tono}
+Temporada: ${d.temporada||'Sin fechas especiales'}
+Historial exitoso: ${d.historial||'Sin historial'}
+Restricciones: ${d.restricciones||'Ninguna'}
+
+SINCRONIZACIÓN CON META ADS (CRÍTICO):
+${syncLines}
+
+REGLAS:
+- Exactamente ${d.posteos} posts en 4 semanas (~${porSemana}/semana)
+- Distribución: ${descDist} (total ${d.posteos})
+- Publicar SOLO en días óptimos: ${d.diasOptimos.join(', ')}
+- Tono SIEMPRE: ${d.tono} — aplica a TODO el copy
+- Incluir OBLIGATORIAMENTE 1 post etiquetado como MOFU con objetivo "Anti-objeción: ${d.objecion}"
+- copy_estructurado según formato:
+  * Reel/Video: {"gancho":"3 seg","guion_escenas":["e1","e2","e3"],"cta_hablado":"texto"}
+  * Carrusel: {"titulo_slide1":"texto","slides":[{"numero":1,"texto":"x"}],"cta_ultimo_slide":"texto"}
+  * Post estático: {"texto_arte":"texto","caption":"texto","cta":"texto"}
+  * Story: {"texto_superpuesto":"texto","accion_link":"texto"}
+- Máximo 2 oraciones por campo. Concisos y directos.
+
+RESPONDE SOLO JSON PURO. Sin texto ni markdown.
+
+{"resumen":{"total_posts":${d.posteos},"tofu":${d.dist.tofu},"mofu":${d.dist.mofu},"bofu":${d.dist.bofu},"retencion":${d.dist.retencion},"narrativa":"2 oraciones","posts_clave":["t1","t2","t3"]},"semanas":[{"titulo":"Semana 1 — fechas","sync_ads":"objetivo del ad esta semana y cómo el orgánico lo refuerza","posts":[{"dia":"Martes 1","etapa":"TOFU","objetivo":"texto","formato":"Reel","tema":"título","copy_estructurado":{"gancho":"texto","guion_escenas":["e1","e2","e3"],"cta_hablado":"texto"},"cta":"texto","visual":"texto","justificacion":"texto","es_anti_objecion":false}]}],"alertas":[{"tipo":"fecha_clave","mensaje":"texto"}]}`;
+}
+
+function buildPromptAds(d){
+  const kpi2line=d.rule2?`KPI secundario: ${d.rule2.label}`:'';
+  // Si KPI es leads, sobreescribir funnel con arquitectura de generación de leads
+  let funnelFinal = d.funnel;
+  if(d.kpi === 'leads'){
+    funnelFinal = [
+      {semana:'Semana 1', obj_meta:'Tráfico', fase:'TOFU', pct:20, razon:'Llevar tráfico frío a la landing page o formulario'},
+      {semana:'Semana 2', obj_meta:'Generación de clientes potenciales', fase:'MOFU', pct:30, razon:'Formulario nativo de Meta (Lead Ads) con oferta de valor'},
+      {semana:'Semana 3', obj_meta:'Generación de clientes potenciales', fase:'BOFU', pct:30, razon:'Lead Ads a audiencia cálida + lookalike de leads anteriores'},
+      {semana:'Semana 4', obj_meta:'Retargeting', fase:'BOFU+', pct:20, razon:'Retargeting visitantes sin convertir + secuencia de nurturing'}
+    ];
+  }
+  const funnelDesc=funnelFinal.map((f,i)=>`Semana ${i+1}: ${f.obj_meta} (${f.fase}) — ${f.razon} — ${f.pct}% del presupuesto`).join('\n');
+  const presupMXN=d.presupuesto||15000;
+  return `Eres el media buyer senior de Proyecta (agencia Meta Ads, México). Genera el plan estratégico completo de Meta Ads para el mes.
+
+BRIEFING:
+Cliente: ${d.cliente}
+Industria: ${d.industria}
+KPI principal: ${d.rule.label}
+${kpi2line}
+Mes: ${d.mes}
+Presupuesto mensual total: $${presupMXN} MXN
+Segmento ICA: ${d.segmento}
+Pain point: ${d.pain||'No especificado'}
+Objeción #1: ${d.objecion}
+Motivador de compra: ${d.motivacion||'No especificado'}
+Tono de marca: ${d.tono}
+Pixel activo: ${d.pixel}
+Audiencias personalizadas disponibles: ${d.audiencias_custom}
+Temporada: ${d.temporada||'Sin fechas especiales'}
+Restricciones: ${d.restricciones||'Ninguna'}
+
+ARQUITECTURA DE FUNNEL PARA ESTA INDUSTRIA (base — ajustar si KPI lo requiere):
+${funnelDesc}
+
+REGLAS:
+- 4 semanas, cada semana tiene 1 campaña principal
+- Presupuesto distribuido según porcentajes de la arquitectura
+- Por semana: 1-2 conjuntos de anuncios (audiencia fría + audiencia cálida si aplica)
+- Por conjunto: copy variante A y variante B (testear variable distinta: copy vs creativo)
+- Intereses con nombres EXACTOS de Meta Ads Manager en español
+- Brief creativo con instrucciones concretas para diseñador
+- Reglas de decisión al final de cada semana (si X → hacer Y)
+- Máximo 2 oraciones por campo. Directo y accionable.
+
+RESPONDE SOLO JSON PURO. Sin texto ni markdown.
+
+{"plan_ads":{"presupuesto_total":${presupMXN},"mes":"${d.mes}","narrativa_estrategica":"2 oraciones sobre por qué esta arquitectura para este cliente"},"semanas":[{"semana":"Semana 1","objetivo_meta":"Alcance","fase_funnel":"TOFU","presupuesto_semana":3000,"presupuesto_diario":429,"justificacion":"texto","conjuntos":[{"nombre":"Audiencia Fría — Intereses","tipo_audiencia":"fria","audiencia":{"edad_min":25,"edad_max":45,"genero":"Todos","ubicaciones":["Mazatlán, Sinaloa"],"intereses_incluir":["interés exacto 1","interés exacto 2"],"intereses_excluir":["excluir 1"],"comportamientos":["comportamiento 1"],"audiencias_personalizadas":[]},"copy_a":{"headline":"máx 40 chars","texto_principal":"máx 2 oraciones","descripcion":"máx 1 oración","cta_boton":"Enviar mensaje","variable_test":"copy emocional vs racional"},"copy_b":{"headline":"variante B","texto_principal":"variante B","descripcion":"variante B","cta_boton":"Más información","variable_test":"mismo"},"brief_creativo":{"formato":"Reel 9:16","duracion":"15-30 seg","mensaje_principal":"texto","que_mostrar":"texto","que_NO_mostrar":"texto","texto_en_video":"texto","referencia_visual":"texto"},"configuracion":["Optimización: Alcance","Placement: Feed + Reels","Frecuencia máx: 2/semana"]}],"reglas_decision":[{"condicion":"Si CPM > $80 MXN al día 3","accion":"Pausar conjunto y duplicar con audiencia más amplia"},{"condicion":"Si CTR > 2%","accion":"Escalar presupuesto 20% y activar conjunto de conversión en paralelo"}],"sync_organico":"qué debe publicar orgánico esta semana para reforzar el ad"}]}`;
+}
+
+// ── GENERAR PLAN ─────────────────────────────────────────────────────────────
+async function generarPlan(){
+  const apiKey=document.getElementById('f-apikey').value.trim();
+  const d=buildData();
+  // Auto-detectar ecommerce por palabras clave en pain/restricciones
+  const painTxt=(d.pain+' '+d.restricciones).toLowerCase();
+  const isEcomm=painTxt.match(/shopify|tienda online|ecommerce|e-commerce|woocommerce|carrito|checkout|envío|shipping/);
+  if(isEcomm && d.industria !== 'Ecommerce'){
+    const switchIt=confirm('🛒 Detecté términos de ecommerce (Shopify, tienda online, etc.)\n¿Cambiar la industria a "Ecommerce" para usar la arquitectura de ads correcta?');
+    if(switchIt){ document.getElementById('f-industria').value='Ecommerce'; d.industria='Ecommerce'; d.funnel=INDUSTRY_FUNNEL['Ecommerce']; }
+  }
+
+  // Loading en ambos tabs
+  const loadHTML=`<div class="loading">
+    <div class="lring"></div>
+    <div class="lt">Construyendo plan completo...</div>
+    <div class="lsteps">
+      <div class="ls">✦ Analizando industria y KPI</div>
+      <div class="ls">✦ Estructurando funnel de ads por semana</div>
+      <div class="ls">✦ Generando copies A/B y briefs creativos</div>
+      <div class="ls">✦ Sincronizando orgánico con campañas</div>
+    </div>
+  </div>`;
+  document.getElementById('panel-organico').innerHTML=loadHTML;
+  document.getElementById('panel-ads').innerHTML=loadHTML;
+  switchTab('organico');
+
+  const btn=document.getElementById('btn-gen');
+  btn.disabled=true; btn.textContent='⟳ Generando...';
+
+  try {
+    // Llamadas paralelas
+    // Mostrar progreso
+    const steps = document.querySelectorAll('.ls');
+    let si=0; const stepTimer=setInterval(()=>{ if(si<steps.length){ steps[si].style.opacity='1'; si++; } else clearInterval(stepTimer); },1200);
+
+    const [resOrg, resAds] = await Promise.allSettled([
+      fetchWithRetry(apiKey, buildPromptOrganico(d), 'Calendario orgánico'),
+      fetchWithRetry(apiKey, buildPromptAds(d), 'Plan de Ads')
+    ]);
+    clearInterval(stepTimer);
+
+    if(resOrg.status==='rejected') throw new Error('Calendario orgánico: '+resOrg.reason?.message);
+    if(resAds.status==='rejected') throw new Error('Plan de Ads: '+resAds.reason?.message);
+    const calOrg = resOrg.value;
+    const calAds = resAds.value;
+    renderOrganico(calOrg, d);
+    renderAds(calAds, d);
+    document.getElementById('tbadge-organico').textContent = (calOrg?.resumen?.total_posts||'?')+' posts';
+    document.getElementById('tbadge-ads').textContent = '4 semanas';
+    window._lastData = { calOrg, calAds, d };
+  } catch(e) {
+    const errHTML = (msg) => `<div class="empty">
+      <div class="empty-ico">⚠️</div>
+      <div class="empty-t">Error al generar</div>
+      <div class="empty-s" style="max-width:380px">${msg}</div>
+      <button onclick="abrirChecklist()" style="margin-top:12px;padding:9px 20px;background:var(--accent);color:white;border:none;border-radius:8px;font-family:'Roboto Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer">↺ Reintentar</button>
+    </div>`;
+    document.getElementById('panel-organico').innerHTML=errHTML(e.message);
+    document.getElementById('panel-ads').innerHTML=errHTML(e.message);
+  } finally {
+    btn.disabled=false; btn.innerHTML='✦ Generar Plan Completo';
+  }
+}
+
+async function fetchAPI(apiKey, prompt){
+  const res=await fetch(API_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,messages:[{role:'user',content:prompt}]})
+  });
+  const json=await res.json();
+  if(json.error) throw new Error(json.error.message);
+  return json.content?.map(b=>b.text||'').join('')||'';
+}
+
+function parseJSON(raw){
+  if(!raw||!raw.trim()) throw new Error('Respuesta vacía de la API.');
+  const f=raw.indexOf('{'), l=raw.lastIndexOf('}');
+  if(f===-1||l===-1) throw new Error('Sin JSON en la respuesta. Reintenta.');
+  const slice = raw.slice(f, l+1);
+
+  // Intento 1: JSON limpio
+  try{ return JSON.parse(slice); } catch(_){}
+
+  // Intento 2: limpiezas básicas
+  try{
+    const fx = slice
+      .replace(/,\s*([}\]])/g, '$1')          // trailing commas
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,' ') // control chars
+      .replace(/\\'/g, "'")                    // escaped single quotes
+      .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3'); // unquoted keys
+    return JSON.parse(fx);
+  } catch(_){}
+
+  // Intento 3: reparar JSON truncado — encontrar el último objeto completo válido
+  try{
+    let depth=0, lastValid=0;
+    for(let i=0;i<slice.length;i++){
+      const ch=slice[i];
+      if(ch==='{' || ch==='[') depth++;
+      else if(ch==='}' || ch===']'){ depth--; if(depth===0) lastValid=i; }
+    }
+    if(lastValid>0){
+      const repaired = slice.slice(0,lastValid+1);
+      // cerrar llaves/corchetes faltantes
+      let d2=0, opens=[];
+      for(const ch of repaired){ if(ch==='{')opens.push('}'); else if(ch==='[')opens.push(']'); else if(ch==='}'||ch===']')opens.pop(); }
+      const closed = repaired + opens.reverse().join('');
+      return JSON.parse(closed.replace(/,\s*([}\]])/g,'$1'));
+    }
+  } catch(_){}
+
+  // Intento 4: extraer estructura mínima usable con regex
+  try{
+    const semanas = [...slice.matchAll(/"titulo"\s*:\s*"([^"]+)"/g)].map(m=>m[1]);
+    if(semanas.length>0){
+      throw new Error(`JSON malformado en posición media. Se detectaron ${semanas.length} semanas pero el JSON no pudo repararse. Reintenta — ocurre cuando la respuesta es muy larga.`);
+    }
+  } catch(e){ if(e.message.includes('semanas')) throw e; }
+
+  throw new Error('JSON inválido después de 3 intentos de reparación. Reintenta o reduce el número de posteos.');
+}
+
+// Reintento automático con backoff
+async function fetchWithRetry(apiKey, prompt, label, maxRetries=2){
+  let lastErr;
+  for(let attempt=0; attempt<=maxRetries; attempt++){
+    try{
+      if(attempt>0){
+        const delay=attempt*3000;
+        console.log(`Reintentando ${label} (intento ${attempt+1})...`);
+        await new Promise(r=>setTimeout(r,delay));
+      }
+      const raw = await fetchAPI(apiKey, prompt);
+      return parseJSON(raw);
+    } catch(e){
+      lastErr = e;
+      // Solo reintentar en errores de JSON/red, no de API key
+      if(e.message.includes('API key')||e.message.includes('authentication')) throw e;
+      console.warn(`${label} intento ${attempt+1} falló:`, e.message);
+    }
+  }
+  throw new Error(`${label}: ${lastErr.message}`);
+}
+
+// ── HELPERS RENDER ───────────────────────────────────────────────────────────
+function validarKPI(kpi,r){
+  const rule=KPI_RULES[kpi]; if(!rule||!r) return null;
+  const t=r.total_posts||1, issues=[];
+  const pB=(r.bofu/t)*100, pT=(r.tofu/t)*100, pR=(r.retencion/t)*100, pMB=((r.mofu+r.bofu)/t)*100;
+  if(rule.minBOFU&&pB<rule.minBOFU) issues.push(`BOFU ${pB.toFixed(0)}% vs ${rule.minBOFU}% requerido`);
+  if(rule.minMOFU_BOFU&&pMB<rule.minMOFU_BOFU) issues.push(`MOFU+BOFU ${pMB.toFixed(0)}% vs ${rule.minMOFU_BOFU}% requerido`);
+  if(rule.minTOFU&&pT<rule.minTOFU) issues.push(`TOFU ${pT.toFixed(0)}% vs ${rule.minTOFU}% requerido`);
+  if(rule.minRET&&pR<rule.minRET) issues.push(`RET ${pR.toFixed(0)}% vs ${rule.minRET}% requerido`);
+  return {ok:issues.length===0,issues,rule};
+}
+function etapaClass(e){return {TOFU:'tofu',MOFU:'mofu',BOFU:'bofu',RETENCION:'ret',RETENCIÓN:'ret'}[e?.toUpperCase()]||'tofu';}
+function etapaLabel(e){return {TOFU:'🔵 Atracción',MOFU:'🟡 Consideración',BOFU:'🟠 Conversión',RETENCION:'🟢 Retención',RETENCIÓN:'🟢 Retención'}[e?.toUpperCase()]||e;}
+function etapaBadge(e){return {TOFU:'b-tofu',MOFU:'b-mofu',BOFU:'b-bofu',RETENCION:'b-ret',RETENCIÓN:'b-ret'}[e?.toUpperCase()]||'b-tofu';}
+function fmtBadge(fmt){
+  const f=(fmt||'').toLowerCase();
+  if(f.includes('reel')) return 'b-fmt-reel';
+  if(f.includes('video')) return 'b-fmt-video';
+  if(f.includes('carrusel')) return 'b-fmt-carrusel';
+  if(f.includes('historia')||f.includes('story')) return 'b-fmt-historia';
+  if(f.includes('imagen')||f.includes('estático')||f.includes('estatico')) return 'b-fmt-imagen';
+  return 'b-fmt-default';
+}
+function objClass(f){return {Alcance:'obj-alcance',Tráfico:'obj-trafico',Conversiones:'obj-conversiones',Mensajes:'obj-mensajes',Retargeting:'obj-retargeting',Interacción:'obj-interaccion'}[f]||'obj-alcance';}
+function alertIcon(t){return {fecha_clave:'📅',produccion:'🎬',riesgo:'⚠️'}[t]||'💡';}
+function fmtMXN(n){return '$'+(parseInt(n)||0).toLocaleString('es-MX')+' MXN';}
+
+function renderCopy(post){
+  const c=post.copy_estructurado;
+  if(!c) return `<div class="copy-blk"><div class="cs-txt">${post.copy||''}</div></div>`;
+  const fmt=(post.formato||'').toLowerCase();
+  let h=`<div class="copy-blk"><div class="copy-blk-t">✍️ Copy — ${post.formato}</div>`;
+  if(fmt.includes('reel')||fmt.includes('video')||fmt.includes('tiktok')){
+    if(c.gancho) h+=`<div class="cs"><div class="cs-lbl">⚡ Gancho (0–3 seg)</div><div class="cs-txt">${c.gancho}</div></div>`;
+    if(c.guion_escenas?.length){h+=`<div class="cs"><div class="cs-lbl">🎬 Guión</div>`;c.guion_escenas.forEach((e,i)=>{h+=`<div class="cs-scene"><strong>${i+1}.</strong> ${e}</div>`;});h+=`</div>`;}
+    if(c.cta_hablado) h+=`<div class="cs"><div class="cs-lbl">📣 CTA hablado</div><div class="cs-txt">${c.cta_hablado}</div></div>`;
+  } else if(fmt.includes('carrusel')){
+    if(c.titulo_slide1) h+=`<div class="cs"><div class="cs-lbl">🖼 Slide 1</div><div class="cs-txt">${c.titulo_slide1}</div></div>`;
+    if(c.slides?.length){h+=`<div class="cs"><div class="cs-lbl">📋 Slides</div>`;c.slides.forEach(s=>{h+=`<div class="cs-scene"><strong>${s.numero}.</strong> ${s.texto}</div>`;});h+=`</div>`;}
+    if(c.cta_ultimo_slide) h+=`<div class="cs"><div class="cs-lbl">📣 CTA final</div><div class="cs-txt">${c.cta_ultimo_slide}</div></div>`;
+  } else if(fmt.includes('story')){
+    if(c.texto_superpuesto) h+=`<div class="cs"><div class="cs-lbl">📝 Texto en pantalla</div><div class="cs-txt">${c.texto_superpuesto}</div></div>`;
+    if(c.accion_link) h+=`<div class="cs"><div class="cs-lbl">🔗 Link</div><div class="cs-txt">${c.accion_link}</div></div>`;
+  } else {
+    if(c.texto_arte) h+=`<div class="cs"><div class="cs-lbl">🖼 Arte</div><div class="cs-txt">${c.texto_arte}</div></div>`;
+    if(c.caption) h+=`<div class="cs"><div class="cs-lbl">✍️ Caption</div><div class="cs-txt">${c.caption}</div></div>`;
+    if(c.cta) h+=`<div class="cs"><div class="cs-lbl">📣 CTA</div><div class="cs-txt">${c.cta}</div></div>`;
+  }
+  return h+`</div>`;
+}
+
+// ── RENDER ORGÁNICO ──────────────────────────────────────────────────────────
+function renderOrganico(cal, d){
+  const r=cal.resumen||{};
+  const kv=validarKPI(d.kpi,r);
+  let h='';
+
+  h+=`<div class="out-hdr fade-in">
+    <div><div class="out-client">${d.cliente}</div>
+    <div class="out-meta">${d.mes} · ${r.total_posts||0} posts orgánicos · ${d.plats}${d.kpi2&&d.rule2?' · KPI2: '+d.rule2.label:''}</div></div>
+  </div>`;
+
+  if(kv){
+    if(kv.ok){
+      h+=`<div class="kpi-alert ok"><span>✅</span><div><div class="kat">Distribución correcta para: ${kv.rule.label}</div>${kv.rule.desc_dist}</div></div>`;
+    } else {
+      h+=`<div class="kpi-alert ${kv.issues.length>1?'err':'warn'}">
+        <span>${kv.issues.length>1?'🔴':'⚠️'}</span>
+        <div><div class="kat">Distribución fuera del objetivo — Claude no respetó la instrucción</div>
+        <div style="font-size:11px;margin-top:3px">${kv.issues.map(i=>`• ${i}`).join('<br>')}</div>
+        <div style="font-size:10px;margin-top:4px;opacity:.7">Distribución solicitada: ${kv.rule.desc_dist} — Recomendado: regenerar</div></div>
+      </div>`;
+    }
+  }
+
+  h+=`<div class="funnel-grid">
+    <div class="fc tofu"><div class="fc-lbl">Atracción</div><div class="fc-num">${r.tofu||0}</div><div class="fc-name">TOFU</div></div>
+    <div class="fc mofu"><div class="fc-lbl">Consideración</div><div class="fc-num">${r.mofu||0}</div><div class="fc-name">MOFU</div></div>
+    <div class="fc bofu"><div class="fc-lbl">Conversión</div><div class="fc-num">${r.bofu||0}</div><div class="fc-name">BOFU</div></div>
+    <div class="fc ret"><div class="fc-lbl">Retención</div><div class="fc-num">${r.retencion||0}</div><div class="fc-name">Comunidad</div></div>
+  </div>`;
+
+  (cal.semanas||[]).forEach(semana=>{
+    h+=`<div>`;
+    if(semana.sync_ads){
+      h+=`<div class="sync-banner"><span class="sync-icon">🔗</span><div><strong>Ads esta semana:</strong> ${semana.sync_ads}</div></div>`;
+    }
+    h+=`<div class="week-title">📅 ${semana.titulo}</div><div class="posts-col">`;
+    (semana.posts||[]).forEach(post=>{
+      const isObj=post.es_anti_objecion;
+      h+=`<div class="post-card ${isObj?'objection':etapaClass(post.etapa)} fade-in">
+        <div class="pc-hdr">
+          <div><div class="pc-date">${post.dia}</div><div class="pc-title">${post.tema}</div></div>
+          <div class="pc-badges">
+            ${isObj?`<span class="badge b-obj">🛡️ Anti-objeción</span>`:`<span class="badge ${etapaBadge(post.etapa)}">${etapaLabel(post.etapa)}</span>`}
+            <span class="${fmtBadge(post.formato)}">${post.formato}</span>
+          </div>
+        </div>
+        <div class="pc-obj">🎯 ${post.objetivo}</div>
+        ${renderCopy(post)}
+        <div class="pc-footer">
+          <div class="pfi">📣 ${post.cta}</div>
+          <div class="pfi">🎨 ${post.visual}</div>
+          <div class="pfi">💡 ${post.justificacion}</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+  });
+
+  h+=`<div class="summary-card">
+    <div class="sc-t">✦ Resumen Estratégico</div>
+    <div class="sc-c">${r.narrativa||''}\n\nPosts clave:\n${(r.posts_clave||[]).map((p,i)=>`${i+1}. ${p}`).join('\n')}</div>
+  </div>`;
+
+  if(cal.alertas?.length){
+    h+=`<div><div class="week-title">⚠️ Alertas</div><div style="display:flex;flex-direction:column;gap:7px">`;
+    cal.alertas.forEach(a=>{h+=`<div class="alert-item ${a.tipo||''}"><span class="ai">${alertIcon(a.tipo)}</span><span>${a.mensaje}</span></div>`;});
+    h+=`</div></div>`;
+  }
+
+  document.getElementById('panel-organico').innerHTML=h;
+}
+
+// ── RENDER ADS ───────────────────────────────────────────────────────────────
+function renderAds(cal, d){
+  const p=cal.plan_ads||{};
+  let h='';
+
+  h+=`<div class="out-hdr fade-in">
+    <div><div class="out-client">Plan Meta Ads — ${d.cliente}</div>
+    <div class="out-meta">${d.mes} · Presupuesto total: ${fmtMXN(p.presupuesto_total||d.presupuesto)} · ${d.rule.label}</div></div>
+  </div>`;
+
+  if(p.narrativa_estrategica){
+    h+=`<div class="summary-card"><div class="sc-t">🧠 Estrategia del mes</div><div class="sc-c">${p.narrativa_estrategica}</div></div>`;
+  }
+
+  (cal.semanas||[]).forEach((sem,idx)=>{
+    const presD=sem.presupuesto_diario||Math.round((sem.presupuesto_semana||0)/7);
+    h+=`<div class="ads-plan-week fade-in">
+      <div class="apw-hdr">
+        <div class="apw-week">${sem.semana}</div>
+        <span class="apw-obj ${objClass(sem.objetivo_meta)}">${sem.objetivo_meta}</span>
+        <span style="font-size:10px;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--text-soft)">${sem.fase_funnel}</span>
+        <span class="apw-budget">${fmtMXN(sem.presupuesto_semana)} · ~${fmtMXN(presD)}/día</span>
+      </div>
+      <div class="apw-logic">${sem.justificacion||''}</div>`;
+
+    (sem.conjuntos||[]).forEach(cj=>{
+      const aud=cj.audiencia||{};
+      h+=`<div class="cset">
+        <div class="cset-title">
+          ${cj.nombre}
+          <span class="cset-tag ${cj.tipo_audiencia==='fria'?'fria':'calida'}">${cj.tipo_audiencia==='fria'?'Audiencia fría':'Audiencia cálida'}</span>
+        </div>
+        <div class="ads-2col">
+          <div class="ads-blk">
+            <div class="ads-blk-lbl">👥 Audiencia base</div>
+            <div class="ads-item">Edad: ${aud.edad_min||''}–${aud.edad_max||''} · ${aud.genero||'Todos'}</div>
+            ${(aud.ubicaciones||[]).map(u=>`<div class="ads-item">${u}</div>`).join('')}
+          </div>
+          <div class="ads-blk">
+            <div class="ads-blk-lbl">✅ Intereses — seleccionar</div>
+            ${(aud.intereses_incluir||[]).map(i=>`<div class="ads-item">${i}</div>`).join('')}
+          </div>
+          ${aud.intereses_excluir?.length?`<div class="ads-blk">
+            <div class="ads-blk-lbl">🚫 Excluir</div>
+            ${aud.intereses_excluir.map(i=>`<div class="ads-item excl">${i}</div>`).join('')}
+          </div>`:''}
+          ${aud.comportamientos?.length?`<div class="ads-blk">
+            <div class="ads-blk-lbl">🎯 Comportamientos</div>
+            ${aud.comportamientos.map(i=>`<div class="ads-item">${i}</div>`).join('')}
+          </div>`:''}
+          ${aud.audiencias_personalizadas?.length&&aud.audiencias_personalizadas[0]?`<div class="ads-blk" style="grid-column:1/-1">
+            <div class="ads-blk-lbl">⭐ Audiencias personalizadas</div>
+            ${aud.audiencias_personalizadas.map(i=>`<div class="ads-item">${i}</div>`).join('')}
+          </div>`:''}
+        </div>`;
+
+      // Copy A
+      if(cj.copy_a){
+        h+=`<div class="ad-copy-blk">
+          <div class="acb-title vara">📝 Variante A — ${cj.copy_a.variable_test||'Copy principal'}</div>
+          <div class="ad-field"><div class="ad-field-lbl">Headline</div><div class="ad-field-val">${cj.copy_a.headline||''}</div><div class="ad-field-hint">máx 40 chars</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Texto principal</div><div class="ad-field-val">${cj.copy_a.texto_principal||''}</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Descripción</div><div class="ad-field-val">${cj.copy_a.descripcion||''}</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Botón CTA</div><div class="ad-field-val">${cj.copy_a.cta_boton||''}</div></div>
+        </div>`;
+      }
+      // Copy B
+      if(cj.copy_b){
+        h+=`<div class="ad-copy-blk varb">
+          <div class="acb-title varb">📝 Variante B — ${cj.copy_b.variable_test||'Copy alternativo'}</div>
+          <div class="ad-field"><div class="ad-field-lbl">Headline</div><div class="ad-field-val">${cj.copy_b.headline||''}</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Texto principal</div><div class="ad-field-val">${cj.copy_b.texto_principal||''}</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Descripción</div><div class="ad-field-val">${cj.copy_b.descripcion||''}</div></div>
+          <div class="ad-field"><div class="ad-field-lbl">Botón CTA</div><div class="ad-field-val">${cj.copy_b.cta_boton||''}</div></div>
+        </div>`;
+      }
+      // Brief creativo
+      if(cj.brief_creativo){
+        const bc=cj.brief_creativo;
+        h+=`<div class="brief-blk">
+          <div class="brief-lbl">🎨 Brief para diseñador</div>
+          <div class="brief-item">Formato: ${bc.formato||''}</div>
+          ${bc.duracion?`<div class="brief-item">Duración: ${bc.duracion}</div>`:''}
+          <div class="brief-item">Mensaje principal: ${bc.mensaje_principal||''}</div>
+          <div class="brief-item">Qué mostrar: ${bc.que_mostrar||''}</div>
+          <div class="brief-item">Qué NO mostrar: ${bc.que_NO_mostrar||''}</div>
+          ${bc.texto_en_video?`<div class="brief-item">Texto en video: ${bc.texto_en_video}</div>`:''}
+          ${bc.referencia_visual?`<div class="brief-item">Referencia: ${bc.referencia_visual}</div>`:''}
+        </div>`;
+      }
+      h+=`</div>`; // cierra cset
+    });
+
+    // Reglas de decisión
+    if(sem.reglas_decision?.length){
+      h+=`<div class="decision-blk">
+        <div class="decision-title">🎯 Reglas de decisión — fin de semana</div>
+        ${sem.reglas_decision.map(r=>`<div class="dec-rule"><span class="dr-icon">⚡</span><span><strong>Si</strong> ${r.condicion} → ${r.accion}</span></div>`).join('')}
+      </div>`;
+    }
+
+    // Sync orgánico
+    if(sem.sync_organico){
+      h+=`<div class="sync-blk">
+        <div class="sync-blk-lbl">🔗 Sincronización con orgánico</div>
+        ${sem.sync_organico}
+      </div>`;
+    }
+
+    h+=`</div>`; // cierra ads-plan-week
+  });
+
+  document.getElementById('panel-ads').innerHTML=h;
+}
+
+// ── COPIAR TEXTO ─────────────────────────────────────────────────────────────
+function copiarTexto(){
+  if(!window._lastData) return;
+  const {calOrg,d}=window._lastData;
+  let txt=`CALENDARIO — ${d.cliente} — ${d.mes}\nKPI: ${d.rule.label}\n`;
+  (calOrg.semanas||[]).forEach(s=>{
+    txt+=`\n${s.titulo}\n${'─'.repeat(40)}\n`;
+    (s.posts||[]).forEach(p=>{txt+=`\n📅 ${p.dia} | ${p.formato} | ${p.etapa}\nTema: ${p.tema}\nCTA: ${p.cta}\n`;});
+  });
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=document.querySelector('.btn-act');
+    b.textContent='✓ Copiado';
+    setTimeout(()=>b.textContent='📋 Copiar',2000);
+  });
+}
+
+// ── EXPORTAR PDF CLIENTE ──────────────────────────────────────────────────────
+async function exportarPDF(){
+  if(!window._lastData){ alert('Genera el plan primero.'); return; }
+  const {calOrg,calAds,d}=window._lastData;
+  const btn=document.querySelector('.btn-act.primary');
+  btn.textContent='⏳ Preparando...'; btn.disabled=true;
+
+  // Crear ventana de impresión limpia para cliente
+  const win=window.open('','_blank');
+  const p=calAds?.plan_ads||{};
+  let body=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Roboto',sans-serif;color:#1C1C1E;background:white;padding:32px;max-width:800px;margin:0 auto;}
+    .cover{text-align:center;padding:40px 0 32px;border-bottom:2px solid #E8342A;margin-bottom:32px;}
+    .cover-logo{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#E8342A;margin-bottom:8px;}
+    .cover-title{font-family:'Roboto Condensed',sans-serif;font-size:28px;font-weight:700;margin-bottom:4px;}
+    .cover-sub{font-size:13px;color:#636366;}
+    .section-t{font-family:'Roboto Condensed',sans-serif;font-size:16px;font-weight:700;margin:28px 0 12px;padding-bottom:6px;border-bottom:1px solid #eee;}
+    .strategy-box{background:#F7F7FA;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#3C3C40;margin-bottom:20px;}
+    .week-blk{margin-bottom:20px;}
+    .week-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+    .week-name{font-family:'Roboto Condensed',sans-serif;font-size:15px;font-weight:700;}
+    .week-obj{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(232,52,42,.10);color:#E8342A;text-transform:uppercase;letter-spacing:.5px;}
+    .post-row{background:#FAFAFA;border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:3px solid #E8342A;}
+    .post-row.tofu{border-left-color:#3A7BD5;}
+    .post-row.mofu{border-left-color:#F0A500;}
+    .post-row.bofu{border-left-color:#E8342A;}
+    .post-row.ret{border-left-color:#1AB87A;}
+    .post-day{font-size:10px;font-weight:700;color:#8E8E93;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}
+    .post-tema{font-family:'Roboto Condensed',sans-serif;font-size:14px;font-weight:700;margin-bottom:3px;}
+    .post-cta{font-size:12px;color:#636366;}
+    .footer{text-align:center;margin-top:40px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#8E8E93;}
+    @media print{body{padding:20px;}@page{margin:15mm;}}
+  </style></head><body>
+  <div class="cover">
+    <div class="cover-logo">Proyecta · Brief ClickUp</div>
+    <div class="cover-title">${d.cliente}</div>
+    <div class="cover-sub">${d.mes} · ${d.rule.label}${d.rule2?' + '+d.rule2.label:''}</div>
+  </div>`;
+
+  if(p.narrativa_estrategica){
+    body+=`<div class="section-t">Estrategia del mes</div>
+    <div class="strategy-box">${p.narrativa_estrategica}</div>`;
+  }
+
+  if(calOrg?.resumen?.narrativa){
+    body+=`<div class="section-t">Contenido orgánico</div>
+    <div class="strategy-box">${calOrg.resumen.narrativa}</div>`;
+  }
+
+  body+=`<div class="section-t">Calendario de contenido</div>`;
+  (calOrg?.semanas||[]).forEach(sem=>{
+    body+=`<div class="week-blk"><div class="week-hdr"><span class="week-name">${sem.titulo}</span></div>`;
+    (sem.posts||[]).forEach(post=>{
+      const ec={TOFU:'tofu',MOFU:'mofu',BOFU:'bofu',RETENCION:'ret',RETENCIÓN:'ret'}[post.etapa?.toUpperCase()]||'tofu';
+      body+=`<div class="post-row ${ec}">
+        <div class="post-day">${post.dia} · ${post.formato}</div>
+        <div class="post-tema">${post.tema}</div>
+        <div class="post-cta">📣 ${post.cta}</div>
+      </div>`;
+    });
+    body+=`</div>`;
+  });
+
+  if((calAds?.semanas||[]).length){
+    body+=`<div class="section-t">Plan de Meta Ads — resumen</div>`;
+    (calAds.semanas||[]).forEach(sem=>{
+      body+=`<div class="week-blk"><div class="week-hdr">
+        <span class="week-name">${sem.semana}</span>
+        <span class="week-obj">${sem.objetivo_meta}</span>
+        <span style="font-size:11px;color:#636366;margin-left:auto">${fmtMXN(sem.presupuesto_semana)}</span>
+      </div>
+      <div style="font-size:12px;color:#3C3C40;padding:8px 12px;background:#FAFAFA;border-radius:6px">${sem.justificacion||''}</div>
+      </div>`;
+    });
+  }
+
+  body+=`<div class="footer">Generado con Proyecta · Meta Ads Intelligence · ${new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'})}</div>
+  </body></html>`;
+
+  win.document.write(body);
+  win.document.close();
+  setTimeout(()=>{
+    win.print();
+    btn.textContent='📌 Exportar ClickUp'; btn.disabled=false;
+  }, 800);
+}
+</script>
+</body>
+</html>
