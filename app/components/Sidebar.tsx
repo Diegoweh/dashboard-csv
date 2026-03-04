@@ -1,5 +1,6 @@
 'use client';
 import Image from 'next/image';
+import Link from 'next/link';
 import { DashboardData, View } from '../lib/types';
 
 interface Props {
@@ -43,6 +44,17 @@ export default function Sidebar({ currentView, data, onSwitchView, onScrollTo, a
 
         <NavItem active={currentView === 'upload'} onClick={() => onSwitchView('upload')} icon="↑" label="Cargar CSV" />
         <NavItem active={currentView === 'dashboard'} onClick={() => onSwitchView('dashboard')} icon="◈" label="Dashboard" />
+
+        <div className="h-px bg-black/6 dark:bg-white/6 mx-2 my-1.5" />
+        <p className="px-3 py-3.5 text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium tracking-[1.4px] uppercase text-zinc-400 dark:text-zinc-600">Módulos</p>
+
+        <Link
+          href="/calendario"
+          className="relative w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm mb-px text-left transition-colors text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200"
+        >
+          <span className="text-xs w-4 text-center flex-shrink-0 opacity-60">📅</span>
+          <span className="tracking-tight">Calendario</span>
+        </Link>
 
         <div className="h-px bg-black/6 dark:bg-white/6 mx-2 my-1.5" />
         <p className="px-3 py-3.5 text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium tracking-[1.4px] uppercase text-zinc-400 dark:text-zinc-600">Análisis</p>
