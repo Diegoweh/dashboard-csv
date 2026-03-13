@@ -724,6 +724,52 @@ function OrganicoPanel({ calOrg, d }: { calOrg: CalOrg; d: BriefingData }) {
         </div>
       )}
 
+      {/* Scorecard de calidad */}
+      {(() => {
+        const allPosts = (calOrg.semanas || []).flatMap(s => s.posts || []);
+        const checks: Array<{ ok: boolean; label: string; fix: string }> = [];
+
+        const hasAntiObj = allPosts.some(p => p.es_anti_objecion);
+        checks.push({ ok: hasAntiObj, label: 'Post anti-objeción incluido', fix: 'Falta un post que destruya la objeción principal del ICA' });
+
+        const weeksWithAncla = (calOrg.semanas || []).filter(s => (s.posts || []).some(p => p.es_post_ancla)).length;
+        checks.push({ ok: weeksWithAncla >= 3, label: `Posts ancla: ${weeksWithAncla}/4 semanas`, fix: 'Cada semana debería tener un post ancla que guíe la narrativa' });
+
+        const fmtCounts: Record<string, number> = {};
+        allPosts.forEach(p => { const f = (p.formato || '').toLowerCase(); fmtCounts[f] = (fmtCounts[f] || 0) + 1; });
+        const maxFmt = allPosts.length ? Math.max(...Object.values(fmtCounts)) : 0;
+        const fmtVariety = allPosts.length === 0 || maxFmt / allPosts.length <= 0.5;
+        checks.push({ ok: fmtVariety, label: `Variedad de formatos (máx ${allPosts.length ? Math.round(maxFmt / allPosts.length * 100) : 0}% mismo formato)`, fix: 'Más de 50% es un solo formato — diversificar con Carrusel, Story, etc.' });
+
+        const bofuPosts = allPosts.filter(p => p.etapa?.toUpperCase() === 'BOFU');
+        const bofuWithCTA = bofuPosts.filter(p => { const c = (p.cta || '').toLowerCase(); return c.includes('whatsapp') || c.includes('reserva') || c.includes('compra') || c.includes('agenda') || c.includes('link') || c.includes('manda') || c.includes('escríbenos') || c.includes('mensaje'); });
+        checks.push({ ok: bofuPosts.length === 0 || bofuWithCTA.length >= bofuPosts.length * 0.7, label: `BOFU con CTA directo: ${bofuWithCTA.length}/${bofuPosts.length}`, fix: 'Los posts BOFU deben tener CTA de acción: WhatsApp, reservar, comprar' });
+
+        const weeklyBalance = (calOrg.semanas || []).every(s => (s.posts || []).some(p => { const e = p.etapa?.toUpperCase(); return e === 'MOFU' || e === 'BOFU'; }));
+        checks.push({ ok: weeklyBalance, label: 'Cada semana tiene mínimo 1 MOFU o BOFU', fix: 'Hay semanas con solo TOFU — el funnel requiere presencia de conversión cada semana' });
+
+        const scoreOk = checks.filter(c => c.ok).length;
+        const scoreTotal = checks.length;
+        const scoreColor = scoreOk === scoreTotal ? '#1AB87A' : scoreOk >= 3 ? '#F0A500' : '#E8342A';
+
+        return (
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-black/6 dark:border-white/6 shadow-[0_1px_4px_rgba(0,0,0,0.07)]">
+            <div className="flex items-center gap-2.5 mb-3">
+              <span className="font-cond text-sm font-bold text-zinc-900 dark:text-zinc-100">📋 Scorecard de calidad</span>
+              <span className="font-mono text-xs font-bold" style={{ color: scoreColor }}>{scoreOk}/{scoreTotal}</span>
+            </div>
+            {checks.map((c, i) => (
+              <div key={i} className="flex items-start gap-2 py-1.5 border-b border-black/5 dark:border-white/5 last:border-0 text-xs">
+                <span className="flex-shrink-0">{c.ok ? '✅' : '⚠️'}</span>
+                <span style={{ color: c.ok ? '#1AB87A' : '#F0A500' }}>
+                  {c.ok ? c.label : `${c.label} — ${c.fix}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* Alerts */}
       {(calOrg.alertas || []).length > 0 && (
         <div>
@@ -764,7 +810,7 @@ function AdsPanel({ calAds, d }: { calAds: CalAds; d: BriefingData }) {
         </div>
       )}
 
-      {/* Weekly plans */}
+      {/* Weekly plans — rendered first so scorecard can compute below */}
       {(calAds.semanas || []).map((sem, si) => {
         const presD = sem.presupuesto_diario || Math.round((sem.presupuesto_semana || 0) / 7);
         return (
@@ -887,6 +933,66 @@ function AdsPanel({ calAds, d }: { calAds: CalAds; d: BriefingData }) {
           </div>
         );
       })}
+
+      {/* Scorecard de Ads */}
+      {(() => {
+        const allSemanas = calAds.semanas || [];
+        const totalSpend = allSemanas.reduce((s, sem) => s + (sem.presupuesto_semana || 0), 0);
+        const checks: Array<{ ok: boolean; label: string; fix: string }> = [];
+
+        const budgetMatch = d.presupuesto > 0 && Math.abs(totalSpend - d.presupuesto) < d.presupuesto * 0.1;
+        checks.push({ ok: budgetMatch, label: `Presupuesto asignado: ${fmtMXN(totalSpend)} / ${fmtMXN(d.presupuesto)} (${budgetMatch ? 'dentro del 10%' : 'desviado >10%'})`, fix: 'El presupuesto generado se desvía más de 10% del solicitado — revisar distribución' });
+
+        const weeksWithConj = allSemanas.filter(s => (s.conjuntos || []).length > 0).length;
+        checks.push({ ok: weeksWithConj === allSemanas.length, label: `Conjuntos de anuncios: ${weeksWithConj}/${allSemanas.length} semanas con configuración`, fix: 'Hay semanas sin conjuntos de anuncios configurados' });
+
+        const allConj = allSemanas.flatMap(s => s.conjuntos || []);
+        const conjWithAB = allConj.filter(c => c.copy_a && c.copy_b).length;
+        checks.push({ ok: allConj.length === 0 || conjWithAB === allConj.length, label: `Copy A/B testing: ${conjWithAB}/${allConj.length} conjuntos con variantes`, fix: 'Hay conjuntos sin variante B para testing' });
+
+        const conjWithBrief = allConj.filter(c => c.brief_creativo).length;
+        checks.push({ ok: allConj.length === 0 || conjWithBrief === allConj.length, label: `Brief creativo: ${conjWithBrief}/${allConj.length} conjuntos con brief para diseñador`, fix: 'Hay conjuntos sin brief creativo — el diseñador no sabrá qué producir' });
+
+        const allUbicaciones = allConj.flatMap(c => (c.audiencia?.ubicaciones || [])).join(' ').toLowerCase();
+        const emisoras = (d.ciudades_emisoras || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+        const geoMatch = emisoras.length === 0 || emisoras.some(e => allUbicaciones.includes(e.split(' ')[0]));
+        checks.push({ ok: geoMatch, label: `Segmentación geográfica: ${geoMatch ? 'incluye ciudades emisoras' : 'NO incluye ciudades emisoras'}`, fix: `Los ads NO están segmentando las ciudades emisoras (${d.ciudades_emisoras}). Esto es crítico.` });
+
+        const scoreOk = checks.filter(c => c.ok).length;
+        const scoreTotal = checks.length;
+        const scoreColor = scoreOk === scoreTotal ? '#1AB87A' : scoreOk >= 3 ? '#F0A500' : '#E8342A';
+
+        return (
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-black/6 dark:border-white/6 shadow-[0_1px_4px_rgba(0,0,0,0.07)]">
+            <div className="flex items-center gap-2.5 mb-3">
+              <span className="font-cond text-sm font-bold text-zinc-900 dark:text-zinc-100">📊 Scorecard de Ads</span>
+              <span className="font-mono text-xs font-bold" style={{ color: scoreColor }}>{scoreOk}/{scoreTotal}</span>
+            </div>
+            {checks.map((c, i) => (
+              <div key={i} className="flex items-start gap-2 py-1.5 border-b border-black/5 dark:border-white/5 last:border-0 text-xs">
+                <span className="flex-shrink-0">{c.ok ? '✅' : '⚠️'}</span>
+                <span style={{ color: c.ok ? '#1AB87A' : '#F0A500' }}>
+                  {c.ok ? c.label : `${c.label} — ${c.fix}`}
+                </span>
+              </div>
+            ))}
+            {/* Investment summary */}
+            <div className="mt-3.5 pt-3 border-t border-black/8 dark:border-white/8">
+              <div className="text-[9px] font-bold uppercase tracking-[1px] text-zinc-400 mb-2">💰 Resumen de inversión del mes</div>
+              {allSemanas.map((s, i) => (
+                <div key={i} className="flex justify-between items-center py-1 text-xs text-zinc-700 dark:text-zinc-300">
+                  <span>{s.semana} · {s.objetivo_meta || ''}</span>
+                  <span className="font-mono font-medium">{fmtMXN(s.presupuesto_semana || 0)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center pt-2 mt-1.5 border-t-2 border-zinc-800 dark:border-zinc-200 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                <span>TOTAL MES</span>
+                <span className="font-mono" style={{ color: '#E8342A' }}>{fmtMXN(totalSpend)}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
