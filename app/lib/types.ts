@@ -36,8 +36,32 @@ export interface DashboardMetrics {
 export interface DashboardData {
   clientName: string;
   period: string;
+  industry: Industry;
   metrics: DashboardMetrics;
   campaigns: Campaign[];
+}
+
+export type Industry =
+  | 'Atracción / Entretenimiento'
+  | 'Hotel / Hospedaje'
+  | 'Turismo / Atracción'
+  | 'Food & Lifestyle'
+  | 'Healthcare / Salud'
+  | 'Ecommerce'
+  | 'Bienes Raíces'
+  | 'B2B / Servicios'
+  | 'Retail / Comercio'
+  | 'Otro';
+
+export interface IndustryBenchmark {
+  scale: number;      // CPL-I below this = Escalar
+  stable: number;     // CPL-I below this = Estable
+  optimize: number;   // CPL-I below this = Optimizar
+  pause: number;      // CPL-I above this = Pausar
+  ctrMin: number;     // CTR minimum for industry (%)
+  freqAlert: number;  // Frequency alert threshold
+  lpvMin: number;     // LPV rate minimum (%)
+  cpmAlert: number;   // CPM alert threshold (MXN)
 }
 
 export type View = 'upload' | 'dashboard';

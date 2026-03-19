@@ -1,7 +1,7 @@
 'use client';
 import { useState, useCallback, useRef } from 'react';
-import { DashboardData } from '../lib/types';
-import { COL_FIELDS } from '../lib/data';
+import { DashboardData, Industry } from '../lib/types';
+import { COL_FIELDS, INDUSTRIES } from '../lib/data';
 import { parseCSVText, autoDetectMapping, buildDashboardData, CSVMapping } from '../lib/csvParser';
 
 interface Props {
@@ -15,6 +15,8 @@ export default function UploadView({ onApply, onResetDemo }: Props) {
   const [mapping,   setMapping]   = useState<CSVMapping>({});
   const [filename,  setFilename]  = useState('');
   const [dragging,  setDragging]  = useState(false);
+  const [industry,  setIndustry]  = useState<Industry>('Otro');
+  const [clientName, setClientName] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const processFile = useCallback((file: File) => {
@@ -38,7 +40,7 @@ export default function UploadView({ onApply, onResetDemo }: Props) {
 
   const handleApply = () => {
     if (!rows.length) return;
-    const data = buildDashboardData(rows, mapping, filename);
+    const data = buildDashboardData(rows, mapping, clientName || filename, industry);
     onApply(data);
   };
 
@@ -96,6 +98,40 @@ export default function UploadView({ onApply, onResetDemo }: Props) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Client & Industry */}
+      {headers.length > 0 && (
+        <div className="bg-white dark:bg-zinc-900 border border-black/6 dark:border-white/6 rounded-2xl overflow-hidden mb-3.5">
+          <div className="px-5 py-3.5 border-b border-black/6 dark:border-white/6 flex items-center justify-between">
+            <h4 className="text-sm font-medium text-zinc-800 dark:text-zinc-100">Contexto del cliente</h4>
+            <span className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400">Los benchmarks cambian según la industria</span>
+          </div>
+          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400 font-[family-name:var(--font-roboto-mono)]">Nombre del cliente *</label>
+              <input
+                type="text"
+                value={clientName}
+                onChange={e => setClientName(e.target.value)}
+                placeholder="Ej: Gran Acuario Mazatlán"
+                className="px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-black/6 dark:border-white/8 rounded-xl text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-accent transition-colors"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400 font-[family-name:var(--font-roboto-mono)]">Industria *</label>
+              <select
+                value={industry}
+                onChange={e => setIndustry(e.target.value as Industry)}
+                className="px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-black/6 dark:border-white/8 rounded-xl text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-accent cursor-pointer transition-colors"
+              >
+                {INDUSTRIES.map(ind => (
+                  <option key={ind} value={ind}>{ind}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       )}
