@@ -3,16 +3,15 @@ import { CLAUDE_MODEL } from './data';
 export async function callClaude(
   apiKey: string,
   prompt: string,
-  maxTokens = 1200
+  maxTokens = 2000
 ): Promise<string> {
   const resp = await fetch('/api/claude', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      apiKey,
+      messages: [{ role: 'user', content: prompt }],
       model: CLAUDE_MODEL,
       max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
     }),
   });
   if (!resp.ok) {
@@ -20,5 +19,8 @@ export async function callClaude(
     throw new Error(err?.error?.message || `API ${resp.status}`);
   }
   const data = await resp.json();
-  return data.content?.map((b: { text?: string }) => b.text || '').join('') || '';
+  // Handle both response formats (unified route)
+  if (data.text) return data.text;
+  if (data.content) return data.content.map((b: { type?: string; text?: string }) => b.type === 'text' ? b.text : '').join('') || '';
+  return '';
 }

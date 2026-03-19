@@ -7,14 +7,24 @@ const client = new Anthropic({
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { messages, system, model = 'claude-sonnet-4-6', stream: useStream = false } = body;
+  const {
+    messages,
+    prompt,
+    system,
+    model = 'claude-sonnet-4-6',
+    max_tokens = 4096,
+    stream: useStream = false,
+  } = body;
 
-  if (!messages || !Array.isArray(messages)) {
-    return NextResponse.json({ error: 'messages array is required' }, { status: 400 });
+  // Support both formats: { messages } or legacy { prompt }
+  const msgs = messages || (prompt ? [{ role: 'user' as const, content: prompt }] : null);
+
+  if (!msgs || !Array.isArray(msgs) || msgs.length === 0) {
+    return NextResponse.json({ error: 'messages array or prompt string is required' }, { status: 400 });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 500 });
+    return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured on server' }, { status: 500 });
   }
 
   try {
@@ -24,21 +34,17 @@ export async function POST(req: NextRequest) {
         async start(controller) {
           const stream = client.messages.stream({
             model,
-            max_tokens: 4096,
-            thinking: { type: 'adaptive' },
+            max_tokens,
             ...(system && { system }),
-            messages,
+            messages: msgs,
           });
-
           for await (const event of stream) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
           }
-
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         },
       });
-
       return new Response(readable, {
         headers: {
           'Content-Type': 'text/event-stream',
@@ -50,12 +56,12 @@ export async function POST(req: NextRequest) {
 
     const response = await client.messages.create({
       model,
-      max_tokens: 4096,
-      thinking: { type: 'adaptive' },
+      max_tokens,
       ...(system && { system }),
-      messages,
+      messages: msgs,
     });
 
+    // Return full response (content array)
     return NextResponse.json(response);
   } catch (error) {
     if (error instanceof Anthropic.APIError) {

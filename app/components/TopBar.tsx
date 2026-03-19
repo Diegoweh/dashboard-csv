@@ -77,12 +77,12 @@ export default function TopBar({
           ⬇ Dashboard PDF
         </button>
 
-        {/* <button
+        <button
           onClick={onAuditPDF}
           className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-white text-xs font-medium hover:bg-accent-hover shadow-[0_2px_8px_rgba(232,52,42,.25)] transition-colors"
         >
           ✦ Auditoría PDF
-        </button> */}
+        </button>
 
         <button
           onClick={onRunAI}

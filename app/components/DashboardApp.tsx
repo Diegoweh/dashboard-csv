@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { DashboardData, View, Theme } from '../lib/types';
-import { DEMO_DATA, CLAUDE_MODEL } from '../lib/data';
+import { DEMO_DATA, CLAUDE_MODEL, getBenchmark, saveDashboardInsights } from '../lib/data';
 import { fmt$, fmtPct, fmtK } from '../lib/utils';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
@@ -12,10 +12,11 @@ import ApiKeyModal from './ApiKeyModal';
 import Footer from './Footer';
 
 function getAlertCount(data: DashboardData): number {
-  const m = data.metrics, bench = 5;
+  const m = data.metrics;
+  const bench = getBenchmark(data.industry);
   let count = 0;
-  data.campaigns.forEach(c => { if (c.cpli && c.cpli > bench * 2) count++; });
-  if (m.lpv_rate && m.lpv_rate < 85) count++;
+  data.campaigns.forEach(c => { if (c.cpli && c.cpli > bench.pause * 2) count++; });
+  if (m.lpv_rate && m.lpv_rate < bench.lpvMin) count++;
   return count;
 }
 
@@ -100,31 +101,38 @@ export default function DashboardApp() {
         backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F5F5F7',
         windowWidth: 1200,
         onclone: (clonedDoc: Document) => {
-          // html2canvas doesn't support lab()/oklch() used by Tailwind v4 — strip those rules
           Array.from(clonedDoc.styleSheets).forEach(sheet => {
             try {
               const rules = Array.from(sheet.cssRules || []);
               for (let i = rules.length - 1; i >= 0; i--) {
                 const text = (rules[i] as CSSStyleRule).cssText || '';
-                if (text.includes('lab(') || text.includes('oklch(')) {
-                  sheet.deleteRule(i);
-                }
+                if (text.includes('lab(') || text.includes('oklch(')) { sheet.deleteRule(i); }
               }
             } catch { /* skip cross-origin sheets */ }
           });
         },
       } as any);
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
       const margin = 10, usableW = pageW - margin * 2;
       const imgH = (canvas.height * usableW) / canvas.width;
       const accent: [number, number, number] = [232, 52, 42];
-      pdf.setFillColor(...accent); pdf.rect(0, 0, pageW, 12, 'F');
-      pdf.setTextColor(255, 255, 255); pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
-      pdf.text('PROYECTA · META ADS INTELLIGENCE', margin, 8);
-      pdf.text(data.period, pageW - margin, 8, { align: 'right' });
+      const fecha = new Date().toLocaleDateString('es-MX');
+
+      const addHeader = (isFirst: boolean) => {
+        pdf.setFillColor(...accent); pdf.rect(0, 0, pageW, isFirst ? 12 : 10, 'F');
+        pdf.setTextColor(255, 255, 255); pdf.setFontSize(isFirst ? 9 : 7); pdf.setFont('helvetica', 'bold');
+        pdf.text(`PROYECTA · META ADS INTELLIGENCE · ${data.industry.toUpperCase()}`, margin, isFirst ? 8 : 7);
+        pdf.text(data.period, pageW - margin, isFirst ? 8 : 7, { align: 'right' });
+      };
+      const addFooter = () => {
+        pdf.setFillColor(...accent); pdf.rect(0, pageH - 8, pageW, 8, 'F');
+        pdf.setTextColor(255, 255, 255); pdf.setFontSize(7);
+        pdf.text(`${data.clientName} · Generado por Proyecta · ${fecha}`, margin, pageH - 3);
+      };
+
+      addHeader(true);
       let yOffset = 14, remaining = imgH, srcY = 0;
       const availH = pageH - yOffset - 14;
       while (remaining > 0) {
@@ -133,12 +141,10 @@ export default function DashboardApp() {
         sc.width = canvas.width; sc.height = (sliceH / imgH) * canvas.height;
         sc.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, sc.height, 0, 0, canvas.width, sc.height);
         pdf.addImage(sc.toDataURL('image/png'), 'PNG', margin, yOffset, usableW, sliceH);
+        addFooter();
         remaining -= sliceH; srcY += sc.height;
-        if (remaining > 0) { pdf.addPage(); yOffset = 10; }
+        if (remaining > 0) { pdf.addPage(); addHeader(false); yOffset = 14; }
       }
-      pdf.setFillColor(...accent); pdf.rect(0, pageH - 8, pageW, 8, 'F');
-      pdf.setTextColor(255, 255, 255); pdf.setFontSize(7);
-      pdf.text(`Generado por Proyecta · ${new Date().toLocaleDateString('es-MX')}`, margin, pageH - 3);
       pdf.save(`dashboard-${data.clientName.replace(/\s/g,'-')}-${new Date().toISOString().slice(0,10)}.pdf`);
     } catch (e) { console.error(e); alert('Error al generar el PDF. Intenta de nuevo.'); }
     finally { setPdfLoading(null); }
@@ -152,13 +158,16 @@ export default function DashboardApp() {
     try {
       // Get AI analysis
       const campaigns = data.campaigns, metrics = data.metrics;
+      const bench = getBenchmark(data.industry);
       const csvResumen = campaigns.map(c =>
         `${c.name} | Spend: $${c.spend} | CTR: ${c.ctr}% | CPC: $${c.cpc} | CPM: ${c.cpm||'N/A'} | Frec: ${c.freq} | Acción: ${c.action||'N/A'}`
       ).join('\n');
-      const masterPrompt = `Eres un Senior Meta Ads Auditor con 10+ años de experiencia. Tu análisis debe ser técnico, ejecutivo y 100% accionable. Sin relleno. Sin frases genéricas. Habla en español.
+      const masterPrompt = `Eres un Senior Meta Ads Auditor con 10+ años de experiencia en ${data.industry}. Tu análisis debe ser técnico, ejecutivo y 100% accionable. Sin relleno. Sin frases genéricas. Habla en español.
 
 DATOS DE LA CUENTA:
 Cliente: ${data.clientName}
+Industria: ${data.industry}
+Benchmarks de la industria: CPL-I escalar <$${bench.scale} MXN, optimizar $${bench.stable}-$${bench.optimize} MXN, pausar >$${bench.pause} MXN. CTR mínimo: ${bench.ctrMin}%. Frecuencia alerta: ${bench.freqAlert}×. LPV rate mínimo: ${bench.lpvMin}%.
 Total campañas: ${campaigns.length}
 Presupuesto total del período: $${metrics.spend}
 CTR promedio cuenta: ${metrics.ctr||'N/A'}%
@@ -203,11 +212,11 @@ Estructura, rendimiento, señales de alerta. Específico con los nombres de camp
       const resp = await fetch('/api/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey, model: CLAUDE_MODEL, max_tokens: 2000, messages: [{ role: 'user', content: masterPrompt }] }),
+        body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: masterPrompt }] }),
       });
       if (!resp.ok) throw new Error(`API ${resp.status}`);
       const result = await resp.json();
-      const analisis: string = result.content?.[0]?.text || 'Sin respuesta de la IA.';
+      const analisis: string = result.content?.map((b: {type?:string;text?:string}) => b.type === 'text' ? b.text : '').join('') || result.text || 'Sin respuesta de la IA.';
 
       // Build PDF
       const { default: jsPDF } = await import('jspdf');
@@ -227,20 +236,22 @@ Estructura, rendimiento, señales de alerta. Específico con los nombres de camp
       const addFooter = () => {
         pdf.setFillColor(245,245,245); pdf.rect(0, pageH-10, pageW, 10, 'F');
         pdf.setTextColor(...gray); pdf.setFontSize(7); pdf.setFont('helvetica','normal');
-        pdf.text(`Generado con IA por Proyecta · ${fecha}`, margin, pageH-4);
+        pdf.text(`Generado con IA por Proyecta · ${data.industry} · ${fecha}`, margin, pageH-4);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pdf.text(`Pág. ${(pdf.internal as any).getCurrentPageInfo().pageNumber}`, pageW-margin, pageH-4, { align:'right' });
+        pdf.text(`Pag. ${(pdf.internal as any).getCurrentPageInfo().pageNumber}`, pageW-margin, pageH-4, { align:'right' });
       };
       const checkPage = () => {
         if (y > maxY) {
           addFooter(); pdf.addPage();
           pdf.setFillColor(...accent); pdf.rect(0,0,pageW,10,'F');
           pdf.setTextColor(255,255,255); pdf.setFontSize(7); pdf.setFont('helvetica','bold');
-          pdf.text('AUDITORÍA META ADS · PROYECTA', margin, 7); y = 16;
+          pdf.text(`AUDITORIA META ADS · ${data.clientName.toUpperCase()} · PROYECTA`, margin, 7); y = 16;
         }
       };
+      // Strip emoji from text (jsPDF Helvetica can't render them)
+      const stripEmoji = (s: string) => s.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27FF}]|[\u{FE00}-\u{FEFF}]/gu, '').trim();
       for (const rawLine of analisis.split('\n')) {
-        const line = rawLine.trim(); if (!line) { y += 3; continue; }
+        const line = stripEmoji(rawLine.trim()); if (!line) { y += 3; continue; }
         checkPage();
         if (line.startsWith('## ')) {
           y += 4; checkPage();
@@ -248,19 +259,23 @@ Estructura, rendimiento, señales de alerta. Específico con los nombres de camp
           pdf.setTextColor(255,255,255); pdf.setFontSize(10); pdf.setFont('helvetica','bold');
           pdf.text(line.replace('## ','').toUpperCase(), margin+3, y+0.5); y += 8; continue;
         }
-        if (line.startsWith('🔴')) { pdf.setFillColor(255,235,238); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(...accent); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.text('● URGENTE — '+line.replace('🔴','').trim(), margin+2, y+0.5); y += lineH+1; continue; }
-        if (line.startsWith('🟡')) { pdf.setFillColor(255,248,225); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(180,120,0); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.text('● PRIORITARIO — '+line.replace('🟡','').trim(), margin+2, y+0.5); y += lineH+1; continue; }
-        if (line.startsWith('🟢')) { pdf.setFillColor(232,245,233); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(46,125,50); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.text('● OPTIMIZACIÓN — '+line.replace('🟢','').trim(), margin+2, y+0.5); y += lineH+1; continue; }
+        // Priority lines — detect by keyword instead of emoji
+        const isUrgent = line.match(/^(URGENTE|urgente)/i) || rawLine.includes('\u{1F534}');
+        const isPriority = line.match(/^(PRIORITARIO|prioritario)/i) || rawLine.includes('\u{1F7E1}');
+        const isOptim = line.match(/^(OPTIMIZACI|optimizaci)/i) || rawLine.includes('\u{1F7E2}');
+        if (isUrgent) { pdf.setFillColor(255,235,238); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(...accent); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.splitTextToSize('>> URGENTE — '+line.replace(/^(URGENTE|urgente)[:\s-]*/i,''), usableW-6).forEach((l:string)=>{checkPage();pdf.text(l, margin+2, y+0.5);y+=lineH;}); continue; }
+        if (isPriority) { pdf.setFillColor(255,248,225); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(180,120,0); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.splitTextToSize('>> PRIORITARIO — '+line.replace(/^(PRIORITARIO|prioritario)[:\s-]*/i,''), usableW-6).forEach((l:string)=>{checkPage();pdf.text(l, margin+2, y+0.5);y+=lineH;}); continue; }
+        if (isOptim) { pdf.setFillColor(232,245,233); pdf.rect(margin,y-3.5,usableW,7,'F'); pdf.setTextColor(46,125,50); pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.splitTextToSize('>> OPTIMIZACION — '+line.replace(/^(OPTIMIZACI[OÓ]N|optimizaci[oó]n)[:\s-]*/i,''), usableW-6).forEach((l:string)=>{checkPage();pdf.text(l, margin+2, y+0.5);y+=lineH;}); continue; }
         if (line.startsWith('### ') || (line.startsWith('**') && line.endsWith('**'))) {
           pdf.setTextColor(...dark); pdf.setFontSize(9); pdf.setFont('helvetica','bold');
-          pdf.splitTextToSize(line.replace(/^###\s*/,'').replace(/\*\*/g,''), usableW).forEach((l: string) => { checkPage(); pdf.text(l, margin, y); y += lineH; }); continue;
+          pdf.splitTextToSize(stripEmoji(line.replace(/^###\s*/,'').replace(/\*\*/g,'')), usableW).forEach((l: string) => { checkPage(); pdf.text(l, margin, y); y += lineH; }); continue;
         }
-        if (line.startsWith('- ') || line.startsWith('• ')) {
+        if (line.startsWith('- ') || line.startsWith('* ')) {
           pdf.setTextColor(...dark); pdf.setFontSize(8.5); pdf.setFont('helvetica','normal');
-          pdf.splitTextToSize('·  '+line.replace(/^[-•]\s*/,'').replace(/\*\*/g,''), usableW-4).forEach((l: string, i: number) => { checkPage(); pdf.text(l, margin+(i>0?5:0), y); y += lineH-0.5; }); continue;
+          pdf.splitTextToSize('·  '+stripEmoji(line.replace(/^[-•*]\s*/,'').replace(/\*\*/g,'')), usableW-4).forEach((l: string, i: number) => { checkPage(); pdf.text(l, margin+(i>0?5:0), y); y += lineH-0.5; }); continue;
         }
         pdf.setTextColor(...dark); pdf.setFontSize(8.5); pdf.setFont('helvetica','normal');
-        pdf.splitTextToSize(line.replace(/\*\*/g,''), usableW).forEach((l: string) => { checkPage(); pdf.text(l, margin, y); y += lineH; });
+        pdf.splitTextToSize(stripEmoji(line.replace(/\*\*/g,'')), usableW).forEach((l: string) => { checkPage(); pdf.text(l, margin, y); y += lineH; });
       }
       addFooter();
       pdf.save(`auditoria-${data.clientName.replace(/\s/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.pdf`);
@@ -301,7 +316,7 @@ Estructura, rendimiento, señales de alerta. Específico con los nombres de camp
         <main className="flex-1 px-7 pt-7 pb-0">
           {view === 'upload' ? (
             <UploadView
-              onApply={d => { setData(d); switchView('dashboard'); }}
+              onApply={d => { setData(d); saveDashboardInsights(d); switchView('dashboard'); }}
               onResetDemo={() => { setData(DEMO_DATA); switchView('dashboard'); }}
             />
           ) : (
