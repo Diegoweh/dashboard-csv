@@ -124,6 +124,7 @@ export const COL_FIELDS = [
   { key: 'add_to_cart',          label: 'Add to Cart / Intención',    required: false },
   { key: 'results',              label: 'Resultados (Mensajes)',      required: false },
   { key: 'cost_per_result',      label: 'Coste por resultados',       required: false },
+  { key: 'result_indicator',     label: 'Indicador de resultado',     required: false },
 ];
 
 // ── FEEDBACK LOOP: Dashboard → Calendario ──────────────────────────────────
