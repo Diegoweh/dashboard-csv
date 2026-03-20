@@ -171,7 +171,7 @@ export function buildDashboardData(
     const freq   = parseNum(getVal(row, mapping.frequency));
     const cpm    = parseNum(getVal(row, mapping.cpm));
     const atc    = parseInt2(getVal(row, mapping.add_to_cart));
-    const res    = parseInt2(getVal(row, mapping.results));
+    let   res    = parseInt2(getVal(row, mapping.results));
     const cprCsv = parseNum(getVal(row, mapping.cost_per_result));
 
     // If CTR comes from CSV as already a percentage (e.g. "1.5" meaning 1.5%)
@@ -181,6 +181,22 @@ export function buildDashboardData(
     // If CTR not provided or invalid, calculate from link_clicks / impressions
     if ((ctr === null || ctr <= 0) && lc && imp && imp > 0) {
       ctr = (lc / imp) * 100;
+    }
+
+    // ── Guard: filter out non-messaging "results" in messages mode ──
+    // When CSV mixes campaign objectives (awareness + messages), awareness
+    // campaigns report reach as "Resultados". Detect and nullify these:
+    // 1) Results ≈ reach (within 5%) → it's a reach result, not messaging
+    // 2) Results > link_clicks × 5 with link_clicks > 0 → impossible for messages
+    // 3) Results > 0 but link_clicks is 0/null → no click = no conversation
+    if (mode === 'messages' && res !== null && res > 0) {
+      const isReachResult = reach && reach > 0 && Math.abs(res - reach) / reach < 0.05;
+      const isImpResult   = imp && imp > 0 && Math.abs(res - imp) / imp < 0.05;
+      const wayMoreThanClicks = lc && lc > 0 && res > lc * 5;
+      const noClicks = !lc || lc === 0;
+      if (isReachResult || isImpResult || wayMoreThanClicks || noClicks) {
+        res = null; // Not a messaging result — exclude from metrics
+      }
     }
 
     const cpli   = spend && lpv ? spend / lpv : null;

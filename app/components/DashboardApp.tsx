@@ -39,7 +39,7 @@ export default function DashboardApp() {
   const aiBodyRef = useRef<HTMLDivElement>(null);
   const dashContentRef = useRef<HTMLDivElement>(null);
 
-  // Init: load theme + apiKey from localStorage
+  // Init: load theme + apiKey + persisted dashboard data from localStorage
   useEffect(() => {
     const savedTheme = (localStorage.getItem('proy_theme') as Theme) || 'light';
     const savedKey   = localStorage.getItem('proy_apikey') || '';
@@ -47,6 +47,18 @@ export default function DashboardApp() {
     setApiKey(savedKey);
     const d = new Date();
     setDateStr(d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }));
+
+    // Restore dashboard data if navigating back from /calendario
+    try {
+      const savedData = localStorage.getItem('proy_dashboard_data');
+      if (savedData) {
+        const parsed = JSON.parse(savedData) as DashboardData;
+        if (parsed && parsed.clientName && parsed.campaigns?.length > 0) {
+          setData(parsed);
+          setView('dashboard');
+        }
+      }
+    } catch { /* ignore parse errors */ }
   }, []);
 
   // Apply dark class to <html>
@@ -345,8 +357,8 @@ Estructura, rendimiento, señales de alerta. Específico con los nombres de camp
         <main className="flex-1 px-7 pt-7 pb-0">
           {view === 'upload' ? (
             <UploadView
-              onApply={d => { setData(d); saveDashboardInsights(d); switchView('dashboard'); }}
-              onResetDemo={() => { setData(DEMO_DATA); switchView('dashboard'); }}
+              onApply={d => { setData(d); saveDashboardInsights(d); localStorage.setItem('proy_dashboard_data', JSON.stringify(d)); switchView('dashboard'); }}
+              onResetDemo={() => { setData(DEMO_DATA); localStorage.removeItem('proy_dashboard_data'); switchView('dashboard'); }}
             />
           ) : (
             <div ref={dashContentRef}>
