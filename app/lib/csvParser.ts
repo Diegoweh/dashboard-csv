@@ -44,6 +44,7 @@ const AUTO_PATTERNS: Record<string, string[]> = {
   add_to_cart:        ['adds to cart', 'add to cart', 'agregar al carrito', 'initiate checkout', 'inicios de pago', 'purchase', 'compras'],
   results:            ['resultados', 'results', 'mensajes enviados', 'messaging conversations started', 'conversaciones', 'leads'],
   cost_per_result:    ['coste por resultados', 'coste por resultado', 'cost per result', 'costo por resultado', 'costo por resultados'],
+  result_indicator:   ['indicador de resultado', 'result indicator', 'result type', 'tipo de resultado'],
 };
 
 export function autoDetectMapping(headers: string[]): CSVMapping {
@@ -101,15 +102,40 @@ function parseInt2(val: string | null): number | null {
 }
 
 // ── DETECT CAMPAIGN MODE ──────────────────────────────────────────────────
-// If most campaigns have "results" but NO landing_page_views → messages mode
+// Uses "Indicador de resultado" column (if present) for accurate detection.
+// Messaging indicators: "messaging", "conversation", "onsite_conversion.messaging"
+// Traffic indicators: "link_click", "landing_page_view", "reach", "post_engagement"
+// Fallback: if no indicator column, check if CSV has LPV data → traffic
 function detectMode(rows: string[][], mapping: CSVMapping): CampaignMode {
   const hasLPV = mapping.landing_page_views >= 0;
   const hasResults = mapping.results >= 0;
+  const hasIndicator = mapping.result_indicator >= 0;
 
   if (!hasResults) return 'traffic';
+
+  // ── Priority 1: Use "Indicador de resultado" column if available ──
+  if (hasIndicator) {
+    let msgIndicators = 0;
+    let totalIndicators = 0;
+    for (const row of rows) {
+      const indicator = (getVal(row, mapping.result_indicator) || '').toLowerCase();
+      if (!indicator) continue;
+      totalIndicators++;
+      if (indicator.includes('messaging') || indicator.includes('conversation') ||
+          indicator.includes('mensaj') || indicator.includes('lead') ||
+          indicator.includes('onsite_conversion.lead')) {
+        msgIndicators++;
+      }
+    }
+    // If majority of indicators are messaging-related → messages mode
+    if (totalIndicators > 0 && msgIndicators > totalIndicators * 0.5) return 'messages';
+    if (totalIndicators > 0) return 'traffic';
+  }
+
+  // ── Priority 2: No indicator column — use structural heuristic ──
   if (!hasLPV && hasResults) return 'messages';
 
-  // Both mapped — check which has more actual data
+  // Both LPV and Results mapped — check data density
   let lpvCount = 0, resCount = 0;
   for (const row of rows) {
     const lpvVal = parseInt2(getVal(row, mapping.landing_page_views));
@@ -118,8 +144,8 @@ function detectMode(rows: string[][], mapping: CSVMapping): CampaignMode {
     if (resVal && resVal > 0) resCount++;
   }
 
-  // If more rows have results than LPV, it's messages mode
-  if (resCount > lpvCount * 1.5) return 'messages';
+  // Only switch to messages if there's clearly NO LPV data at all
+  if (lpvCount === 0 && resCount > 0) return 'messages';
   return 'traffic';
 }
 

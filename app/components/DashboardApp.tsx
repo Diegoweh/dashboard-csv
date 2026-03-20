@@ -102,11 +102,12 @@ export default function DashboardApp() {
       if (!content) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await html2canvas(content, {
-        scale: 1.2,  // Reduced from 2 to keep PDF under 5MB
+        scale: 1.6,
         useCORS: true,
-        backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F5F5F7',
-        windowWidth: 1100,
+        backgroundColor: theme === 'dark' ? '#1C1C1E' : '#FFFFFF',
+        windowWidth: 1440,
         onclone: (clonedDoc: Document) => {
+          // Remove oklch/lab colors that break html2canvas
           Array.from(clonedDoc.styleSheets).forEach(sheet => {
             try {
               const rules = Array.from(sheet.cssRules || []);
@@ -116,40 +117,59 @@ export default function DashboardApp() {
               }
             } catch { /* skip cross-origin sheets */ }
           });
+          // PDF-optimized styles: cleaner spacing, better readability
+          const style = clonedDoc.createElement('style');
+          style.textContent = `
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            section { page-break-inside: avoid; margin-bottom: 24px !important; padding-bottom: 16px !important; border-bottom: 1px solid #e5e7eb !important; }
+            .kpi-card, .kpi-card-main { border: 1px solid #d1d5db !important; border-radius: 12px !important; }
+            table { font-size: 11px !important; border-collapse: collapse !important; }
+            table th, table td { border: 1px solid #d1d5db !important; padding: 6px 8px !important; }
+            table th { background: #f9fafb !important; font-weight: 600 !important; }
+            .chip-scale, .chip-stable, .chip-optimize, .chip-pause { font-weight: 600 !important; }
+          `;
+          clonedDoc.head.appendChild(style);
         },
       } as any);
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 8, usableW = pageW - margin * 2;
+      const margin = 6, usableW = pageW - margin * 2;
       const imgH = (canvas.height * usableW) / canvas.width;
       const accent: [number, number, number] = [232, 52, 42];
       const fecha = new Date().toLocaleDateString('es-MX');
 
+      const modeLabel = data.mode === 'messages' ? 'MENSAJES' : 'TRÁFICO';
       const addHeader = (isFirst: boolean) => {
-        pdf.setFillColor(...accent); pdf.rect(0, 0, pageW, isFirst ? 12 : 10, 'F');
-        pdf.setTextColor(255, 255, 255); pdf.setFontSize(isFirst ? 9 : 7); pdf.setFont('helvetica', 'bold');
-        pdf.text(`PROYECTA · ${data.clientName.toUpperCase()} · ${data.industry.toUpperCase()}`, margin, isFirst ? 8 : 7);
+        const h = isFirst ? 14 : 10;
+        pdf.setFillColor(...accent); pdf.rect(0, 0, pageW, h, 'F');
+        pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(isFirst ? 10 : 7.5);
+        pdf.text(`PROYECTA · ${data.clientName.toUpperCase()} · ${data.industry.toUpperCase()}`, margin, isFirst ? 6 : 5);
+        if (isFirst) {
+          pdf.setFontSize(7.5); pdf.setFont('helvetica', 'normal');
+          pdf.text(`${data.period} · Modo ${modeLabel}`, margin, 11);
+        }
+        pdf.setFontSize(isFirst ? 8 : 7); pdf.setFont('helvetica', 'bold');
         pdf.text(data.period, pageW - margin, isFirst ? 8 : 7, { align: 'right' });
       };
       const addFooter = () => {
-        pdf.setFillColor(245, 245, 245); pdf.rect(0, pageH - 8, pageW, 8, 'F');
-        pdf.setTextColor(100, 100, 100); pdf.setFontSize(7);
-        pdf.text(`${data.clientName} · Generado por Proyecta Intelligence · ${fecha}`, margin, pageH - 3);
+        pdf.setDrawColor(220, 220, 220); pdf.line(margin, pageH - 9, pageW - margin, pageH - 9);
+        pdf.setTextColor(140, 140, 140); pdf.setFontSize(7);
+        pdf.text(`${data.clientName} · Generado por Proyecta Intelligence · ${fecha}`, margin, pageH - 4);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pdf.text(`Pag. ${(pdf.internal as any).getCurrentPageInfo().pageNumber}`, pageW - margin, pageH - 3, { align: 'right' });
+        pdf.text(`Pág. ${(pdf.internal as any).getCurrentPageInfo().pageNumber}`, pageW - margin, pageH - 4, { align: 'right' });
       };
 
       addHeader(true);
-      let yOffset = 14, remaining = imgH, srcY = 0;
-      const availH = pageH - yOffset - 12;
+      let yOffset = 16, remaining = imgH, srcY = 0;
+      const availH = pageH - yOffset - 10;
       while (remaining > 0) {
         const sliceH = Math.min(remaining, availH);
         const sc = document.createElement('canvas');
         sc.width = canvas.width; sc.height = (sliceH / imgH) * canvas.height;
         sc.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, sc.height, 0, 0, canvas.width, sc.height);
-        // Use JPEG with 0.75 quality instead of PNG to reduce file size dramatically
-        pdf.addImage(sc.toDataURL('image/jpeg', 0.75), 'JPEG', margin, yOffset, usableW, sliceH);
+        pdf.addImage(sc.toDataURL('image/jpeg', 0.85), 'JPEG', margin, yOffset, usableW, sliceH);
         addFooter();
         remaining -= sliceH; srcY += sc.height;
         if (remaining > 0) { pdf.addPage(); addHeader(false); yOffset = 14; }
