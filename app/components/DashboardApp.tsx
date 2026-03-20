@@ -15,8 +15,14 @@ function getAlertCount(data: DashboardData): number {
   const m = data.metrics;
   const bench = getBenchmark(data.industry);
   let count = 0;
-  data.campaigns.forEach(c => { if (c.cpli && c.cpli > bench.pause * 2) count++; });
-  if (m.lpv_rate && m.lpv_rate < bench.lpvMin) count++;
+  if (data.mode === 'messages') {
+    const cprP = bench.cprPause ?? 80;
+    data.campaigns.forEach(c => { if (c.cpr && c.cpr > cprP * 2) count++; });
+    if (m.msg_rate && m.msg_rate < (bench.msgRateMin ?? 10)) count++;
+  } else {
+    data.campaigns.forEach(c => { if (c.cpli && c.cpli > bench.pause * 2) count++; });
+    if (m.lpv_rate && m.lpv_rate < bench.lpvMin) count++;
+  }
   return count;
 }
 
@@ -96,10 +102,10 @@ export default function DashboardApp() {
       if (!content) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const canvas = await html2canvas(content, {
-        scale: 2,
+        scale: 1.2,  // Reduced from 2 to keep PDF under 5MB
         useCORS: true,
         backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F5F5F7',
-        windowWidth: 1200,
+        windowWidth: 1100,
         onclone: (clonedDoc: Document) => {
           Array.from(clonedDoc.styleSheets).forEach(sheet => {
             try {
@@ -112,10 +118,10 @@ export default function DashboardApp() {
           });
         },
       } as any);
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
-      const margin = 10, usableW = pageW - margin * 2;
+      const margin = 8, usableW = pageW - margin * 2;
       const imgH = (canvas.height * usableW) / canvas.width;
       const accent: [number, number, number] = [232, 52, 42];
       const fecha = new Date().toLocaleDateString('es-MX');
@@ -123,24 +129,27 @@ export default function DashboardApp() {
       const addHeader = (isFirst: boolean) => {
         pdf.setFillColor(...accent); pdf.rect(0, 0, pageW, isFirst ? 12 : 10, 'F');
         pdf.setTextColor(255, 255, 255); pdf.setFontSize(isFirst ? 9 : 7); pdf.setFont('helvetica', 'bold');
-        pdf.text(`PROYECTA · META ADS INTELLIGENCE · ${data.industry.toUpperCase()}`, margin, isFirst ? 8 : 7);
+        pdf.text(`PROYECTA · ${data.clientName.toUpperCase()} · ${data.industry.toUpperCase()}`, margin, isFirst ? 8 : 7);
         pdf.text(data.period, pageW - margin, isFirst ? 8 : 7, { align: 'right' });
       };
       const addFooter = () => {
-        pdf.setFillColor(...accent); pdf.rect(0, pageH - 8, pageW, 8, 'F');
-        pdf.setTextColor(255, 255, 255); pdf.setFontSize(7);
-        pdf.text(`${data.clientName} · Generado por Proyecta · ${fecha}`, margin, pageH - 3);
+        pdf.setFillColor(245, 245, 245); pdf.rect(0, pageH - 8, pageW, 8, 'F');
+        pdf.setTextColor(100, 100, 100); pdf.setFontSize(7);
+        pdf.text(`${data.clientName} · Generado por Proyecta Intelligence · ${fecha}`, margin, pageH - 3);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        pdf.text(`Pag. ${(pdf.internal as any).getCurrentPageInfo().pageNumber}`, pageW - margin, pageH - 3, { align: 'right' });
       };
 
       addHeader(true);
       let yOffset = 14, remaining = imgH, srcY = 0;
-      const availH = pageH - yOffset - 14;
+      const availH = pageH - yOffset - 12;
       while (remaining > 0) {
         const sliceH = Math.min(remaining, availH);
         const sc = document.createElement('canvas');
         sc.width = canvas.width; sc.height = (sliceH / imgH) * canvas.height;
         sc.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, sc.height, 0, 0, canvas.width, sc.height);
-        pdf.addImage(sc.toDataURL('image/png'), 'PNG', margin, yOffset, usableW, sliceH);
+        // Use JPEG with 0.75 quality instead of PNG to reduce file size dramatically
+        pdf.addImage(sc.toDataURL('image/jpeg', 0.75), 'JPEG', margin, yOffset, usableW, sliceH);
         addFooter();
         remaining -= sliceH; srcY += sc.height;
         if (remaining > 0) { pdf.addPage(); addHeader(false); yOffset = 14; }

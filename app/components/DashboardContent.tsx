@@ -20,14 +20,35 @@ interface Props {
 function KPISection({ data }: { data: DashboardData }) {
   const m = data.metrics;
   const bench = getBenchmark(data.industry);
+  const isMsg = data.mode === 'messages';
   const cpli = m.cpli ?? 0;
+  const cpr  = m.cpr ?? 0;
   const ctr  = m.ctr  ?? 0;
   const lpvR = m.lpv_rate ?? 0;
+  const msgR = m.msg_rate ?? 0;
   const lpvV = m.lpv ?? m.intent_clicks ?? 0;
+  const resV = m.total_results ?? 0;
   const cpc  = m.cpc ?? 0;
   const cpm  = m.cpm ?? 0;
   const freq = m.freq ?? 0;
 
+  // ── Messages mode badges ──
+  const cprScale  = bench.cprScale ?? 15;
+  const cprStable = bench.cprStable ?? 50;
+  const cprPause  = bench.cprPause ?? 80;
+  const mrMin     = bench.msgRateMin ?? 10;
+
+  const cprBadge = cpr <= 0 ? { cls: 'badge-muted', label: '— Sin datos' }
+    : cpr < cprScale ? { cls: 'badge-green', label: '▼ Bajo benchmark' }
+    : cpr < cprStable ? { cls: 'badge-amber', label: '⚠ Monitorear' }
+    : { cls: 'badge-red', label: '▲ Sobre benchmark' };
+
+  const msgRateBadge = msgR >= mrMin * 2 ? { cls: 'badge-green', label: '▲ Excelente' }
+    : msgR >= mrMin ? { cls: 'badge-green', label: '✓ Sólido' }
+    : msgR > 0 ? { cls: 'badge-amber', label: '⚠ Bajo' }
+    : { cls: 'badge-muted', label: '— Sin datos' };
+
+  // ── Traffic mode badges ──
   const cpliBadge = cpli <= 0 ? { cls: 'badge-muted', label: '— Sin datos' }
     : cpli < bench.scale ? { cls: 'badge-green', label: '▼ Bajo benchmark' }
     : cpli < bench.optimize ? { cls: 'badge-amber', label: '⚠ Monitorear' }
@@ -35,69 +56,115 @@ function KPISection({ data }: { data: DashboardData }) {
 
   const ctrBadge = ctr >= bench.ctrMin * 1.5 ? { cls: 'badge-green', label: '▲ Excelente' }
     : ctr >= bench.ctrMin ? { cls: 'badge-green', label: '✓ Sólido' }
-    : ctr >= 1 ? { cls: 'badge-amber', label: '⚠ Bajo — Revisar creative' }
-    : { cls: 'badge-red', label: '▼ Crítico' };
+    : ctr >= 0.5 ? { cls: 'badge-amber', label: '⚠ Bajo — Revisar creative' }
+    : ctr > 0 ? { cls: 'badge-red', label: '▼ Crítico' }
+    : { cls: 'badge-muted', label: '— Sin datos' };
 
-  const ctrDesc = ctr >= 3
-    ? <>CTR de <strong>{fmtPct(ctr)}</strong> supera el benchmark. El creative está capturando atención. Buen momento para escalar.</>
-    : ctr >= 2
-    ? <>CTR de <strong>{fmtPct(ctr)}</strong> dentro del rango objetivo. Mantener y probar variantes.</>
-    : ctr >= 1
-    ? <>CTR de <strong>{fmtPct(ctr)}</strong> por debajo del benchmark de 2%. Revisar hook visual o copy de apertura.</>
-    : <>CTR de <strong>{fmtPct(ctr)}</strong> es crítico. Pausar y renovar creative urgentemente.</>;
+  const ctrDesc = isMsg
+    ? (ctr >= bench.ctrMin
+      ? <>CTR de <strong>{fmtPct(ctr)}</strong> dentro del benchmark para campañas de mensajes en {data.industry}.</>
+      : ctr > 0
+      ? <>CTR de <strong>{fmtPct(ctr)}</strong> bajo para {data.industry}. En campañas de mensajes el CTR tiende a ser menor vs tráfico — enfócate en el costo por mensaje.</>
+      : <>CTR no disponible. Verifica que el CSV incluya la columna de clics en el enlace.</>)
+    : (ctr >= 3
+      ? <>CTR de <strong>{fmtPct(ctr)}</strong> supera el benchmark. El creative está capturando atención. Buen momento para escalar.</>
+      : ctr >= 2
+      ? <>CTR de <strong>{fmtPct(ctr)}</strong> dentro del rango objetivo. Mantener y probar variantes.</>
+      : ctr >= 1
+      ? <>CTR de <strong>{fmtPct(ctr)}</strong> por debajo del benchmark. Revisar hook visual o copy de apertura.</>
+      : <>CTR de <strong>{fmtPct(ctr)}</strong> es crítico. Pausar y renovar creative urgentemente.</>);
 
   const lpvBadge = lpvR >= 85 ? { cls: 'badge-green', label: '✓ Óptima' }
     : lpvR >= 70  ? { cls: 'badge-amber', label: '⚠ Monitorear' }
-    : { cls: 'badge-red', label: '▼ Crítica — Fricción alta' };
+    : lpvR > 0 ? { cls: 'badge-red', label: '▼ Crítica — Fricción alta' }
+    : { cls: 'badge-muted', label: '— Sin datos' };
 
   const lpvDesc = lpvR >= 85
     ? <>Tasa de <strong>{fmtPct(lpvR)}</strong> excelente. La página carga bien en mobile.</>
     : lpvR >= 70
     ? <>Tasa de <strong>{fmtPct(lpvR)}</strong> por debajo del objetivo de 85%. Revisar velocidad mobile.</>
-    : <>Tasa de <strong>{fmtPct(lpvR)}</strong> crítica. <strong>Problema del sitio</strong>: auditar PageSpeed mobile urgente.</>;
+    : lpvR > 0
+    ? <>Tasa de <strong>{fmtPct(lpvR)}</strong> crítica. <strong>Problema del sitio</strong>: auditar PageSpeed mobile urgente.</>
+    : <>Sin datos de landing page views. {isMsg ? 'Normal en campañas de mensajes.' : 'Verifica el mapeo de columnas.'}</>;
 
   return (
     <section id="kpis" className="mb-8 fade-in">
       <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <span className="font-[family-name:var(--font-roboto-mono)] text-xs font-medium text-accent bg-red-50 dark:bg-red-950/30 px-2 py-0.5 rounded-md tracking-wider">01</span>
-          <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">KPIs de Intención</h2>
+          <h2 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 tracking-tight">{isMsg ? 'KPIs de Mensajes' : 'KPIs de Intención'}</h2>
         </div>
-        <span className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400 bg-zinc-50 dark:bg-zinc-800 border border-black/6 dark:border-white/6 px-3 py-1.5 rounded-full tracking-wide">◎ {data.period}</span>
+        <div className="flex items-center gap-2">
+          {isMsg && <span className="text-xs font-[family-name:var(--font-roboto-mono)] text-pblue bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 px-2.5 py-1 rounded-full tracking-wide">Modo Mensajes</span>}
+          <span className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400 bg-zinc-50 dark:bg-zinc-800 border border-black/6 dark:border-white/6 px-3 py-1.5 rounded-full tracking-wide">◎ {data.period}</span>
+        </div>
       </div>
 
       {/* KPI grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
-        {/* CPL-I main */}
-        <div className={`kpi-card relative bg-white dark:bg-zinc-900 border border-black/6 dark:border-white/6 rounded-2xl p-5 transition-all hover:-translate-y-px hover:shadow-xl group overflow-hidden ${cpliBadge.cls !== 'badge-muted' ? 'kpi-card-main' : ''}`}>
-          <div className="text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium text-zinc-400 uppercase tracking-widest mb-2.5">CPL-I · Costo por Clic Intención</div>
-          <Badge variant={cpliBadge.cls}>{cpliBadge.label}</Badge>
-          <div className={`font-[family-name:var(--font-roboto-cond)] text-4xl font-light tracking-[-2px] leading-none my-2 ${cpli > 0 && cpli < bench.scale ? 'text-accent' : 'text-zinc-800 dark:text-zinc-100'}`}>{fmt$(m.cpli)}</div>
-          <div className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400 mb-1.5">{data.industry} · Escalar &lt;${bench.scale} · Pausar &gt;${bench.pause}</div>
-          <div className="text-xs font-light text-zinc-400 leading-relaxed mt-3 pt-3 border-t border-black/6 dark:border-white/6">
-            <strong className="text-zinc-600 dark:text-zinc-300">KPI principal</strong>: costo de llevar al usuario hasta el clic en compra/reserva.
+        {/* Primary KPI: CPR (messages) or CPL-I (traffic) */}
+        {isMsg ? (
+          <div className={`kpi-card relative bg-white dark:bg-zinc-900 border border-black/6 dark:border-white/6 rounded-2xl p-5 transition-all hover:-translate-y-px hover:shadow-xl group overflow-hidden ${cprBadge.cls !== 'badge-muted' ? 'kpi-card-main' : ''}`}>
+            <div className="text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium text-zinc-400 uppercase tracking-widest mb-2.5">CPR · Costo por Mensaje</div>
+            <Badge variant={cprBadge.cls}>{cprBadge.label}</Badge>
+            <div className={`font-[family-name:var(--font-roboto-cond)] text-4xl font-light tracking-[-2px] leading-none my-2 ${cpr > 0 && cpr < cprScale ? 'text-accent' : 'text-zinc-800 dark:text-zinc-100'}`}>{fmt$(m.cpr)}</div>
+            <div className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400 mb-1.5">{data.industry} · Escalar &lt;${cprScale} · Pausar &gt;${cprPause}</div>
+            <div className="text-xs font-light text-zinc-400 leading-relaxed mt-3 pt-3 border-t border-black/6 dark:border-white/6">
+              <strong className="text-zinc-600 dark:text-zinc-300">KPI principal</strong>: costo por cada mensaje/conversación iniciada por el usuario.
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className={`kpi-card relative bg-white dark:bg-zinc-900 border border-black/6 dark:border-white/6 rounded-2xl p-5 transition-all hover:-translate-y-px hover:shadow-xl group overflow-hidden ${cpliBadge.cls !== 'badge-muted' ? 'kpi-card-main' : ''}`}>
+            <div className="text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium text-zinc-400 uppercase tracking-widest mb-2.5">CPL-I · Costo por Clic Intención</div>
+            <Badge variant={cpliBadge.cls}>{cpliBadge.label}</Badge>
+            <div className={`font-[family-name:var(--font-roboto-cond)] text-4xl font-light tracking-[-2px] leading-none my-2 ${cpli > 0 && cpli < bench.scale ? 'text-accent' : 'text-zinc-800 dark:text-zinc-100'}`}>{fmt$(m.cpli)}</div>
+            <div className="text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-400 mb-1.5">{data.industry} · Escalar &lt;${bench.scale} · Pausar &gt;${bench.pause}</div>
+            <div className="text-xs font-light text-zinc-400 leading-relaxed mt-3 pt-3 border-t border-black/6 dark:border-white/6">
+              <strong className="text-zinc-600 dark:text-zinc-300">KPI principal</strong>: costo de llevar al usuario hasta el clic en compra/reserva.
+            </div>
+          </div>
+        )}
 
         {/* CTR */}
-        <KPICard label="CTR ENLACE" badge={ctrBadge} value={fmtPct(m.ctr)} sub="Meta >2%">
+        <KPICard label="CTR ENLACE" badge={ctrBadge} value={fmtPct(m.ctr)} sub={`Meta >${bench.ctrMin}%`}>
           {ctrDesc}
         </KPICard>
 
-        {/* LPV Rate */}
-        <KPICard label="TASA LPV / CLICKS" badge={lpvBadge} value={fmtPct(m.lpv_rate)} sub="Meta >85%">
-          {lpvDesc}
-        </KPICard>
+        {/* Messages: Msg Rate | Traffic: LPV Rate */}
+        {isMsg ? (
+          <KPICard label="TASA MENSAJES / CLICKS" badge={msgRateBadge} value={fmtPct(m.msg_rate)} sub={`Meta >${mrMin}%`}>
+            {msgR >= mrMin
+              ? <>Tasa de <strong>{fmtPct(msgR)}</strong> saludable. Los creativos están generando conversación.</>
+              : msgR > 0
+              ? <>Tasa de <strong>{fmtPct(msgR)}</strong> por debajo del mínimo de {mrMin}%. Revisar CTA y destino de las campañas.</>
+              : <>Sin datos suficientes. Verifica que el CSV incluya la columna de Resultados.</>}
+          </KPICard>
+        ) : (
+          <KPICard label="TASA LPV / CLICKS" badge={lpvBadge} value={fmtPct(m.lpv_rate)} sub="Meta >85%">
+            {lpvDesc}
+          </KPICard>
+        )}
 
-        {/* LPV Volume */}
-        <KPICard
-          label="VOLUMEN LPV"
-          badge={{ cls: lpvV > 0 ? 'badge-green' : 'badge-muted', label: lpvV > 0 ? '↑ Activo' : '— Sin datos' }}
-          value={fmtK(lpvV)}
-          sub="Visitas reales atribuidas"
-        >
-          {fmtK(lpvV)} visitas reales. Triangula con GA4. <strong className="text-zinc-600 dark:text-zinc-300">Discrepancia &gt;30%</strong> → revisar UTMs.
-        </KPICard>
+        {/* Messages: Total Results | Traffic: LPV Volume */}
+        {isMsg ? (
+          <KPICard
+            label="TOTAL MENSAJES"
+            badge={{ cls: resV > 0 ? 'badge-green' : 'badge-muted', label: resV > 0 ? '↑ Activo' : '— Sin datos' }}
+            value={fmtK(resV)}
+            sub="Mensajes/conversaciones"
+          >
+            {fmtK(resV)} mensajes generados. Solicita al cliente datos de citas agendadas vs mensajes para calcular tasa de cierre real.
+          </KPICard>
+        ) : (
+          <KPICard
+            label="VOLUMEN LPV"
+            badge={{ cls: lpvV > 0 ? 'badge-green' : 'badge-muted', label: lpvV > 0 ? '↑ Activo' : '— Sin datos' }}
+            value={fmtK(lpvV)}
+            sub="Visitas reales atribuidas"
+          >
+            {fmtK(lpvV)} visitas reales. Triangula con GA4. <strong className="text-zinc-600 dark:text-zinc-300">Discrepancia &gt;30%</strong> → revisar UTMs.
+          </KPICard>
+        )}
       </div>
 
       {/* Metric row */}
@@ -126,11 +193,19 @@ function KPISection({ data }: { data: DashboardData }) {
 function FunnelSection({ data }: { data: DashboardData }) {
   const m = data.metrics;
   const bench = getBenchmark(data.industry);
+  const isMsg = data.mode === 'messages';
   const freqCalc = m.impressions && m.reach ? (m.impressions / m.reach).toFixed(2) : (m.freq ?? '--');
   const lpvPct   = m.lpv_rate ?? (m.lpv_total && m.link_clicks ? (m.lpv_total / m.link_clicks * 100).toFixed(1) : '--');
   const intentPct = m.lpv_total && m.intent_clicks ? (m.intent_clicks / m.lpv_total * 100).toFixed(1) : '--';
+  const msgPct   = m.msg_rate ?? (m.total_results && m.link_clicks ? (m.total_results / m.link_clicks * 100).toFixed(1) : '--');
+  const mrMin    = bench.msgRateMin ?? 10;
 
-  const steps = [
+  const steps = isMsg ? [
+    { val: fmtK(m.impressions), key: 'Impresiones',    pct: 'base',                      warn: false  },
+    { val: fmtK(m.reach),       key: 'Alcance único',  pct: `Frec. ${freqCalc}×`,        warn: false  },
+    { val: fmtK(m.link_clicks), key: 'Link Clicks',    pct: `CTR ${fmtPct(m.ctr)}`,      warn: false  },
+    { val: fmtK(m.total_results), key: 'Mensajes', pct: `${msgPct}% de LC ${parseFloat(String(msgPct)) < mrMin ? '⚠' : ''}`, warn: parseFloat(String(msgPct)) < mrMin, main: true },
+  ] : [
     { val: fmtK(m.impressions), key: 'Impresiones',    pct: 'base',                      warn: false  },
     { val: fmtK(m.reach),       key: 'Alcance único',  pct: `Frec. ${freqCalc}×`,        warn: false  },
     { val: fmtK(m.link_clicks), key: 'Link Clicks',    pct: `CTR ${fmtPct(m.ctr)}`,      warn: false  },
@@ -182,15 +257,29 @@ function FunnelSection({ data }: { data: DashboardData }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function CampaignsSection({ data, onOpenModal }: { data: DashboardData; onOpenModal: (idx: number) => void }) {
   const campaigns = data.campaigns;
-  const scored = campaigns.filter(c => c.cpli && c.ctr)
-    .map((c, i) => ({ ...c, _idx: i, score: calcWinnerScore(c.ctr!, c.cpli!, c.freq ?? 3, c.spend) }))
-    .sort((a, b) => b.score! - a.score!);
+  const isMsg = data.mode === 'messages';
+  const scored = isMsg
+    ? campaigns.filter(c => c.cpr && c.results)
+        .map((c, i) => ({ ...c, _idx: i, score: (c.results ?? 0) / Math.max(c.cpr ?? 999, 0.01) * Math.log10(Math.max(c.spend, 10)) }))
+        .sort((a, b) => b.score! - a.score!)
+    : campaigns.filter(c => c.cpli && c.ctr)
+        .map((c, i) => ({ ...c, _idx: i, score: calcWinnerScore(c.ctr!, c.cpli!, c.freq ?? 3, c.spend) }))
+        .sort((a, b) => b.score! - a.score!);
   const winner = scored[0];
 
   const [sortField, setSortField] = useState<string>('spend');
   const [sortDir, setSortDir] = useState<'asc'|'desc'>('desc');
 
-  const COLS: { key: string; label: string; get: (c: typeof campaigns[0]) => number | string }[] = [
+  const COLS: { key: string; label: string; get: (c: typeof campaigns[0]) => number | string }[] = isMsg ? [
+    { key: 'name',    label: 'Campaña',           get: c => c.name },
+    { key: 'spend',   label: 'Gasto',             get: c => c.spend },
+    { key: 'results', label: 'Mensajes',          get: c => c.results ?? 0 },
+    { key: 'cpr',     label: 'CPR ($/Msg)',       get: c => c.cpr ?? 0 },
+    { key: 'ctr',     label: 'CTR',               get: c => c.ctr ?? 0 },
+    { key: 'cpc',     label: 'CPC',               get: c => c.cpc ?? 0 },
+    { key: 'freq',    label: 'Frecuencia',        get: c => c.freq ?? 0 },
+    { key: 'action',  label: 'Acción',            get: c => c.action },
+  ] : [
     { key: 'name',   label: 'Campaña',          get: c => c.name },
     { key: 'spend',  label: 'Gasto',             get: c => c.spend },
     { key: 'cpc',    label: 'CPC-LPV',           get: c => c.cpc ?? 0 },
@@ -266,13 +355,18 @@ function CampaignsSection({ data, onOpenModal }: { data: DashboardData; onOpenMo
                     <td className="px-4 py-3 text-xs font-[family-name:var(--font-roboto-mono)] text-zinc-700 dark:text-zinc-200 whitespace-nowrap">
                       {isW && <span className="text-accent mr-1">★</span>}{c.name}
                     </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">${Number(c.spend).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{fmt$(c.cpc)}</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{fmt$(c.cpli)}</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{fmtPct(c.ctr)}</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{fmtK(c.lpv)}</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{(c.freq ?? 0).toFixed(1)}×</td>
-                    <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{fmtK(c.intent)}</td>
+                    {COLS.filter(col => col.key !== 'name' && col.key !== 'action').map(col => {
+                      const val = col.get(c);
+                      let display = '';
+                      if (col.key === 'spend') display = '$' + Number(val).toLocaleString();
+                      else if (col.key === 'cpc' || col.key === 'cpli' || col.key === 'cpr') display = fmt$(val as number);
+                      else if (col.key === 'ctr') display = fmtPct(val as number);
+                      else if (col.key === 'freq') display = (val as number).toFixed(1) + '×';
+                      else if (col.key === 'results') display = fmtK(val as number);
+                      else if (col.key === 'lpv' || col.key === 'intent') display = fmtK(val as number);
+                      else display = String(val);
+                      return <td key={col.key} className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-400">{display}</td>;
+                    })}
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium ${getActionChipClass(c.action)}`}>{c.action}</span>
                     </td>
@@ -606,7 +700,20 @@ function DecisionsSection({ data }: { data: DashboardData }) {
 function BenchmarksSection({ data }: { data: DashboardData }) {
   const m = data.metrics;
   const bench = getBenchmark(data.industry);
-  const rows: [string, string, string, string, string, boolean][] = [
+  const isMsg = data.mode === 'messages';
+  const cprS  = bench.cprScale ?? 15;
+  const cprSt = bench.cprStable ?? 50;
+  const cprP  = bench.cprPause ?? 80;
+  const mrMin = bench.msgRateMin ?? 10;
+
+  const rows: [string, string, string, string, string, boolean][] = isMsg ? [
+    ['Costo por Mensaje (CPR)',  `<$${cprS}`,         `<$${cprSt}`,  `>$${cprP}`,  fmt$(m.cpr),  (m.cpr??999) < cprSt],
+    ['CTR de enlace',            `>${bench.ctrMin}%`,  '>0.5%',      '<0.3%',      fmtPct(m.ctr), (m.ctr??0) >= bench.ctrMin],
+    ['Tasa Mensajes / Clics',    `>${mrMin}%`,         '>15%',       '<5%',        fmtPct(m.msg_rate), (m.msg_rate??0) >= mrMin],
+    ['CPC',                      '<$5',                '<$8',        '>$15',       fmt$(m.cpc),  (m.cpc??999) < 8],
+    ['Frecuencia — alerta',      `<${bench.freqAlert}×`, '<3.0×',    '>4.5×',      (m.freq??0).toFixed(1)+'×', (m.freq??0) < bench.freqAlert],
+    ['CPM',                      `<$${bench.cpmAlert}`, '<$80',      '>$120',      fmt$(m.cpm),  (m.cpm??0) < bench.cpmAlert],
+  ] : [
     ['CTR de enlace',          `>${bench.ctrMin}%`, '>1.8%',    '<0.8%', fmtPct(m.ctr), (m.ctr??0) >= bench.ctrMin],
     ['CPL-I',                  `<$${bench.scale}`,  `<$${bench.stable}`, `>$${bench.pause}`, fmt$(m.cpli), (m.cpli??999) < bench.stable],
     ['CPC Landing Page View',  '<$2.50',            '<$4',      '>$6',   fmt$(m.cpc), (m.cpc??999) < 4],
@@ -661,7 +768,13 @@ function AIInsightsSection({ data, apiKey, bodyRef }: { data: DashboardData; api
     setState('loading');
     const m = data.metrics, campaigns = data.campaigns;
     const bench = getBenchmark(data.industry);
-    const summary = `Datos Meta Ads (${data.period}):\nCliente: ${data.clientName}\nIndustria: ${data.industry}\nGasto: $${(m.spend||0).toFixed(0)} MXN\nCPL-I: $${(m.cpli||0).toFixed(2)} (benchmark escalar <$${bench.scale}, pausar >$${bench.pause})\nCTR: ${(m.ctr||0).toFixed(1)}% (min industria: ${bench.ctrMin}%)\nFrecuencia: ${(m.freq||0).toFixed(1)}× (alerta: ${bench.freqAlert}×)\nLPV Rate: ${(m.lpv_rate||0).toFixed(0)}% (min: ${bench.lpvMin}%)\nCampañas:\n${campaigns.map(c=>`- ${c.name}: $${c.spend} CPL-I $${(c.cpli||0).toFixed(2)} CTR ${(c.ctr||0).toFixed(1)}% Frec ${(c.freq||0).toFixed(1)}× Acción: ${c.action}`).join('\n')}`;
+    const isMsg = data.mode === 'messages';
+    const cprS = bench.cprScale ?? 15;
+    const cprP = bench.cprPause ?? 80;
+    const mrMin = bench.msgRateMin ?? 10;
+    const summary = isMsg
+      ? `Datos Meta Ads — Campañas de MENSAJES (${data.period}):\nCliente: ${data.clientName}\nIndustria: ${data.industry}\nKPI Principal: Costo por Mensaje (CPR)\nGasto: $${(m.spend||0).toFixed(0)} MXN\nCPR promedio: $${(m.cpr||0).toFixed(2)} (benchmark escalar <$${cprS}, pausar >$${cprP})\nTotal mensajes: ${m.total_results||0}\nTasa mensajes/clics: ${(m.msg_rate||0).toFixed(1)}% (min: ${mrMin}%)\nCTR: ${(m.ctr||0).toFixed(1)}% (min industria: ${bench.ctrMin}%)\nFrecuencia: ${(m.freq||0).toFixed(1)}× (alerta: ${bench.freqAlert}×)\nCampañas:\n${campaigns.map(c=>`- ${c.name}: $${c.spend} CPR $${(c.cpr||0).toFixed(2)} Msgs ${c.results||0} CTR ${(c.ctr||0).toFixed(1)}% Frec ${(c.freq||0).toFixed(1)}× Acción: ${c.action}`).join('\n')}`
+      : `Datos Meta Ads (${data.period}):\nCliente: ${data.clientName}\nIndustria: ${data.industry}\nGasto: $${(m.spend||0).toFixed(0)} MXN\nCPL-I: $${(m.cpli||0).toFixed(2)} (benchmark escalar <$${bench.scale}, pausar >$${bench.pause})\nCTR: ${(m.ctr||0).toFixed(1)}% (min industria: ${bench.ctrMin}%)\nFrecuencia: ${(m.freq||0).toFixed(1)}× (alerta: ${bench.freqAlert}×)\nLPV Rate: ${(m.lpv_rate||0).toFixed(0)}% (min: ${bench.lpvMin}%)\nCampañas:\n${campaigns.map(c=>`- ${c.name}: $${c.spend} CPL-I $${(c.cpli||0).toFixed(2)} CTR ${(c.ctr||0).toFixed(1)}% Frec ${(c.freq||0).toFixed(1)}× Acción: ${c.action}`).join('\n')}`;
     const prompt = `Eres auditor senior de Meta Ads para ${data.industry} en México. Analiza estos datos contra los benchmarks de la industria.
 
 Responde SOLO en JSON puro sin texto extra ni backticks:
@@ -857,13 +970,59 @@ function DashboardScorecard({ data }: { data: DashboardData }) {
   const m = data.metrics;
   const bench = getBenchmark(data.industry);
   const campaigns = data.campaigns;
+  const isMsg = data.mode === 'messages';
 
-  const checks = [
-    { ok: (m.cpli ?? 999) < bench.stable, label: `CPL-I ${fmt$(m.cpli)} vs benchmark $${bench.stable}`, desc: 'Eficiencia de presupuesto' },
-    { ok: campaigns.filter(c => (c.freq ?? 0) < bench.freqAlert).length >= campaigns.length * 0.7, label: `${campaigns.filter(c => (c.freq ?? 0) < bench.freqAlert).length}/${campaigns.length} campañas bajo freq alerta`, desc: 'Salud de frecuencia' },
-    { ok: campaigns.length >= 2, label: `${campaigns.length} campañas activas (min 2)`, desc: 'Diversidad de campañas' },
-    { ok: (m.lpv_rate ?? 0) >= bench.lpvMin, label: `LPV rate ${fmtPct(m.lpv_rate)} vs mín ${bench.lpvMin}%`, desc: 'Calidad post-clic' },
-    { ok: campaigns.some(c => c.name.toLowerCase().match(/retarg|rmk|remarket/)) && campaigns.some(c => c.name.toLowerCase().match(/prosp|broad|lal|cold/)), label: 'Prospección + Retargeting activos', desc: 'Estructura de funnel' },
+  const freqOkCount = campaigns.filter(c => (c.freq ?? 0) < bench.freqAlert).length;
+  const hasRetarg = campaigns.some(c => c.name.toLowerCase().match(/retarg|rmk|remarket/));
+  const hasProsp = campaigns.some(c => c.name.toLowerCase().match(/prosp|broad|lal|cold/));
+  const cprS  = bench.cprScale ?? 15;
+  const cprSt = bench.cprStable ?? 50;
+  const cprP  = bench.cprPause ?? 80;
+  const mrMin = bench.msgRateMin ?? 10;
+
+  const checks: { ok: boolean; label: string; desc: string; fix: string }[] = [
+    isMsg ? {
+      ok: (m.cpr ?? 999) < cprSt,
+      label: `CPR ${fmt$(m.cpr)} vs benchmark $${cprSt}`,
+      desc: 'Eficiencia de presupuesto (mensajes)',
+      fix: `Pausar campañas con CPR >${cprP} MXN. Redistribuir presupuesto a campañas con CPR <${cprS} MXN. Revisar audiencia y creative de las más caras.`,
+    } : {
+      ok: (m.cpli ?? 999) < bench.stable,
+      label: `CPL-I ${fmt$(m.cpli)} vs benchmark $${bench.stable}`,
+      desc: 'Eficiencia de presupuesto',
+      fix: `Pausar campañas con CPL-I >${bench.pause} MXN. Redistribuir presupuesto a campañas con CPL-I <${bench.scale} MXN. Revisar segmentación y creativos de las más caras.`,
+    },
+    {
+      ok: freqOkCount >= campaigns.length * 0.7,
+      label: `${freqOkCount}/${campaigns.length} campañas bajo freq alerta`,
+      desc: 'Salud de frecuencia',
+      fix: `Rotar creativos en campañas con frecuencia >${bench.freqAlert}×. Ampliar audiencia 10-15% o pausar las saturadas y crear nuevas. No reutilizar el mismo creative.`,
+    },
+    {
+      ok: campaigns.length >= 2,
+      label: `${campaigns.length} campañas activas (min 2)`,
+      desc: 'Diversidad de campañas',
+      fix: 'Crear al menos 2 campañas activas con diferentes audiencias/creativos. Diversificar reduce riesgo si una campaña se satura.',
+    },
+    isMsg ? {
+      ok: (m.msg_rate ?? 0) >= mrMin,
+      label: `Tasa mensajes/clics ${fmtPct(m.msg_rate)} vs mín ${mrMin}%`,
+      desc: 'Conversión a mensajes',
+      fix: `Solo el ${fmtPct(m.msg_rate)} de los clics genera un mensaje. Revisar el CTA del ad, la experiencia de Messenger/WhatsApp, y que el mensaje automático de bienvenida no sea confuso.`,
+    } : {
+      ok: (m.lpv_rate ?? 0) >= bench.lpvMin,
+      label: `LPV rate ${fmtPct(m.lpv_rate)} vs mín ${bench.lpvMin}%`,
+      desc: 'Calidad post-clic',
+      fix: `El ${(100 - (m.lpv_rate ?? 0)).toFixed(0)}% de los clics no llegan a cargar la página. Auditar velocidad mobile con PageSpeed. Revisar que la landing no tenga pop-ups o redirects que bloqueen la carga.`,
+    },
+    {
+      ok: hasRetarg && hasProsp,
+      label: hasRetarg && hasProsp ? 'Prospección + Retargeting activos' : !hasRetarg ? 'Falta retargeting' : 'Falta prospección',
+      desc: 'Estructura de funnel',
+      fix: !hasRetarg
+        ? 'Crear campaña de retargeting para usuarios que visitaron la landing pero no convirtieron. Audiencia: visitantes 7-14 días. Esto recupera tráfico que ya pagaste.'
+        : 'Crear campaña de prospección con audiencia fría (intereses o LAL). Sin prospección no hay tráfico nuevo entrando al funnel.',
+    },
   ];
 
   const score = checks.filter(c => c.ok).length;
@@ -879,12 +1038,20 @@ function DashboardScorecard({ data }: { data: DashboardData }) {
       <div className="bg-white dark:bg-zinc-900 border border-black/6 dark:border-white/6 rounded-2xl overflow-hidden">
         <div className="p-5 flex flex-col gap-2">
           {checks.map((c, i) => (
-            <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.ok ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200/50 dark:border-green-900/30' : 'bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/30'}`}>
-              <span className="text-sm flex-shrink-0">{c.ok ? '✅' : '⚠️'}</span>
-              <div className="flex-1">
-                <div className={`text-xs font-medium ${c.ok ? 'text-pgreen' : 'text-accent'}`}>{c.desc}</div>
-                <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{c.label}</div>
+            <div key={i} className={`px-4 py-3 rounded-xl border ${c.ok ? 'bg-green-50/50 dark:bg-green-950/20 border-green-200/50 dark:border-green-900/30' : 'bg-red-50/50 dark:bg-red-950/20 border-red-200/50 dark:border-red-900/30'}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-sm flex-shrink-0">{c.ok ? '✅' : '⚠️'}</span>
+                <div className="flex-1">
+                  <div className={`text-xs font-medium ${c.ok ? 'text-pgreen' : 'text-accent'}`}>{c.desc}</div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{c.label}</div>
+                </div>
               </div>
+              {!c.ok && (
+                <div className="mt-2 ml-8 p-2.5 rounded-lg bg-white/60 dark:bg-zinc-800/60 border border-black/4 dark:border-white/4">
+                  <div className="text-[11px] font-[family-name:var(--font-roboto-mono)] font-medium text-accent uppercase tracking-widest mb-1">Corrección recomendada</div>
+                  <div className="text-xs font-light text-zinc-600 dark:text-zinc-400 leading-relaxed">{c.fix}</div>
+                </div>
+              )}
             </div>
           ))}
         </div>

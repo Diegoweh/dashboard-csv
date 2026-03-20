@@ -32,7 +32,12 @@ export default function WinnerModal({ open, campaignIndex, data, apiKey, onClose
     const gm  = data.metrics;
     const all = data.campaigns;
     const bench = getBenchmark(data.industry);
-    const ctx = `Industria: ${data.industry}\nCliente: ${data.clientName}\nBenchmarks: CPL-I escalar <$${bench.scale} MXN, pausar >$${bench.pause} MXN, CTR min ${bench.ctrMin}%\nCampaña: "${campaign.name}"\nGasto: $${campaign.spend||0}\nCPL-I: $${(campaign.cpli||0).toFixed(2)}\nCTR: ${(campaign.ctr||0).toFixed(1)}%\nCPC: $${(campaign.cpc||0).toFixed(2)}\nLPV: ${campaign.lpv||0}\nFrecuencia: ${(campaign.freq||0).toFixed(1)}x\nAcción: ${campaign.action}\nCuenta total: gasto $${gm.spend||0} CPL-I avg $${(gm.cpli||0).toFixed(2)} CTR ${(gm.ctr||0).toFixed(1)}%\nOtras campañas: ${all.filter(x=>x.name!==campaign.name).map(x=>x.name).join(', ')||'--'}`;
+    const isMsg = data.mode === 'messages';
+    const cprS = bench.cprScale ?? 15;
+    const cprP = bench.cprPause ?? 80;
+    const ctx = isMsg
+      ? `Industria: ${data.industry} · Modo: Campañas de Mensajes\nCliente: ${data.clientName}\nBenchmarks: CPR escalar <$${cprS} MXN, pausar >$${cprP} MXN, CTR min ${bench.ctrMin}%\nCampaña: "${campaign.name}"\nGasto: $${campaign.spend||0}\nCPR: $${(campaign.cpr||0).toFixed(2)} (costo por mensaje/resultado)\nResultados/Mensajes: ${campaign.results||0}\nCTR: ${(campaign.ctr||0).toFixed(1)}%\nCPC: $${(campaign.cpc||0).toFixed(2)}\nFrecuencia: ${(campaign.freq||0).toFixed(1)}x\nAcción: ${campaign.action}\nCuenta total: gasto $${gm.spend||0} CPR avg $${(gm.cpr||0).toFixed(2)} mensajes totales ${gm.total_results||0} CTR ${(gm.ctr||0).toFixed(1)}%\nOtras campañas: ${all.filter(x=>x.name!==campaign.name).map(x=>x.name).join(', ')||'--'}`
+      : `Industria: ${data.industry}\nCliente: ${data.clientName}\nBenchmarks: CPL-I escalar <$${bench.scale} MXN, pausar >$${bench.pause} MXN, CTR min ${bench.ctrMin}%\nCampaña: "${campaign.name}"\nGasto: $${campaign.spend||0}\nCPL-I: $${(campaign.cpli||0).toFixed(2)}\nCTR: ${(campaign.ctr||0).toFixed(1)}%\nCPC: $${(campaign.cpc||0).toFixed(2)}\nLPV: ${campaign.lpv||0}\nFrecuencia: ${(campaign.freq||0).toFixed(1)}x\nAcción: ${campaign.action}\nCuenta total: gasto $${gm.spend||0} CPL-I avg $${(gm.cpli||0).toFixed(2)} CTR ${(gm.ctr||0).toFixed(1)}%\nOtras campañas: ${all.filter(x=>x.name!==campaign.name).map(x=>x.name).join(', ')||'--'}`;
 
     const prompts: Record<ModalTab, string> = {
       diagnostico: `Analiza esta campaña de Meta Ads. Responde SOLO en JSON sin texto extra:\n{"performance":"...","hook":"...","cta":"...","audiencia":"...","urgencia":"..."}\nData:\n${ctx}`,
